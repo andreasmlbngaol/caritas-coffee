@@ -1,0 +1,9 @@
+# Mode DEV: Vite dev server + HMR. Source di-bind-mount oleh compose.
+FROM node:24-alpine
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci || npm install
+
+EXPOSE 5178
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

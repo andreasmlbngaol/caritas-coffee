@@ -1,0 +1,38 @@
+# ===== Env & secrets =====
+.env
+.env.*
+!.env.example
+!.env.dev.example
+
+# ===== OS / editor =====
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+
+# ===== Node / FE =====
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== Gradle / BE =====
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+out/
+bin/
+
+# ===== Runtime data (local dev, kalau bind-mount dipakai) =====
+data/
+uploads/
+
+# ===== Logs =====
+logs/
+*.log

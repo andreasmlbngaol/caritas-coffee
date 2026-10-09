@@ -1,0 +1,41 @@
+package id.caritas_kopi.be.auth
+
+import id.caritas_kopi.be.config.AppProperties
+import id.caritas_kopi.be.user.Role
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.security.Keys
+import org.springframework.stereotype.Service
+import java.nio.charset.StandardCharsets
+import java.time.Instant
+import java.util.Date
+import java.util.UUID
+import javax.crypto.SecretKey
+
+@Service
+class JwtService(private val props: AppProperties) {
+
+    private val key: SecretKey by lazy {
+        val raw = props.jwt.secret.toByteArray(StandardCharsets.UTF_8)
+        require(raw.size >= 32) { "JWT_SECRET harus minimal 32 byte" }
+        Keys.hmacShaKeyFor(raw)
+    }
+
+    fun generate(userId: UUID, role: Role): String {
+        val now = Instant.now()
+        return Jwts.builder()
+            .subject(userId.toString())
+            .claim("role", role.name)
+            .issuedAt(Date.from(now))
+            .expiration(Date.from(now.plusSeconds(props.jwt.ttlSeconds)))
+            .signWith(key)
+            .compact()
+    }
+
+    /** Kembalikan userId bila token valid, else null. */
+    fun parseUserId(token: String): UUID? = try {
+        val claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).payload
+        UUID.fromString(claims.subject)
+    } catch (_: Exception) {
+        null
+    }
+}

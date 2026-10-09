@@ -1,0 +1,72 @@
+# Mode DEV: hot reload FE (Vite) & BE (bootRun --continuous), tanpa build penuh.
+# DB, storage, dan env TERPISAH dari prod (volume & nama berbeda).
+# Pakai:  cp .env.dev.example .env.dev
+#         docker compose --env-file .env.dev -f docker-compose.dev.yaml up
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kopi_db_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-kopi_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev-password}
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5545}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    networks: [kopi]
+
+  be:
+    build:
+      context: ./be
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-kopi_db_dev}
+      DB_USER: ${POSTGRES_USER:-kopi_dev}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-dev-password}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      STORAGE_PATH: /app/data/uploads
+      APP_URL: ${APP_URL:-http://localhost:8091}
+      CORS_ALLOWED_ORIGINS: http://localhost:5178
+    volumes:
+      - ./be:/app
+      - gradle-cache:/root/.gradle
+      - uploads-dev:/app/data/uploads
+    ports:
+      - "${BE_PORT:-8091}:8080"
+    networks: [kopi]
+
+  fe:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    depends_on: [be]
+    environment:
+      VITE_API_TARGET: http://be:8080
+    volumes:
+      - ./fe:/app
+      - /app/node_modules
+    ports:
+      - "5178:5178"
+    networks: [kopi]
+
+volumes:
+  pgdata-dev:
+  gradle-cache:
+  uploads-dev:
+
+networks:
+  kopi:

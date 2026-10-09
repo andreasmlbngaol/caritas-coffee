@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/* Dark mode berbasis kelas pada <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-jade-50: #f2f8f5;
+  --color-jade-100: #e0efe9;
+  --color-jade-200: #c1e0d3;
+  --color-jade-300: #93c9b4;
+  --color-jade-400: #5aab8c;
+  --color-jade-500: #1f8a64;
+  --color-jade-600: #147051;
+  --color-jade-700: #0f5c42;
+  --color-jade-800: #0c4a36;
+  --color-jade-900: #093d2d;
+  --font-geist-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+}
+
+/* Mode gelap: skala warna dibalik (terang<->gelap) sehingga `text-*` menjadi
+   terang dan `bg-*` menjadi gelap, tanpa menyentuh ratusan pemakaian kelas.
+   Nilai sengaja dipilih agar teks di atas latar putih/gelap tetap >= 4.5:1. */
+.dark {
+  /* Abu-abu: peran teks dibalik jadi terang, latar jadi gelap. */
+  --color-gray-50: #17181a;
+  --color-gray-100: #2a2c30;
+  --color-gray-200: #35373c;
+  --color-gray-300: #4a4d53;
+  --color-gray-400: #8a8e96;
+  --color-gray-500: #a6aab2;
+  --color-gray-600: #c2c6cd;
+  --color-gray-700: #d6d9de;
+  --color-gray-800: #e6e8ec;
+  --color-gray-900: #f3f4f6;
+  --color-gray-950: #0a0b0c;
+
+  /* Jade: teks jadi terang, latar jadi gelap. */
+  --color-jade-50: #12241d;
+  --color-jade-100: #16352a;
+  --color-jade-200: #b7ecd4;
+  --color-jade-300: #b7ecd4;
+  --color-jade-400: #6fc49b;
+  --color-jade-500: #4fb98c;
+  --color-jade-600: #3f9e75;
+  --color-jade-700: #9fe0c2;
+  --color-jade-800: #9fe0c2;
+  --color-jade-900: #c4efd9;
+}
+
+/* --- Override kelas yang memakai satu token untuk DUA peran (latar vs teks).
+   Tanpa ini, membalik token akan merusak salah satu peran. --- */
+.dark .bg-white { background-color: #1e1f22; }
+.dark .hover\:bg-white:hover { background-color: #26282c; }
+.dark .bg-gray-900 { background-color: #23252a; }
+.dark .bg-gray-800 { background-color: #2b2e33; }
+.dark .hover\:bg-gray-800:hover { background-color: #2b2e33; }
+.dark .bg-jade-800 { background-color: #2f7d5b; }
+.dark .bg-jade-900 { background-color: #1d4f3a; }
+.dark .hover\:bg-jade-900:hover { background-color: #245f45; }
+
+/* Garis kartu (ring-gray-950/5) jadi garis terang tipis di mode gelap. */
+.dark .ring-gray-950\/5 { --tw-ring-color: rgba(255, 255, 255, 0.10); }
+
+/* Teks hijau muda di atas latar hijau gelap (kartu highlight, panel login). */
+.dark .text-jade-100 { color: #b7ecd4; }
+.dark .text-jade-100\/80 { color: rgba(183, 236, 212, 0.8); }
+
+/* Peta Leaflet selalu berlatar terang (tile OSM) - jangan balik token abu di
+   dalam popup/tooltip agar teks tetap gelap dan terbaca. */
+.dark .leaflet-popup-content,
+.dark .leaflet-tooltip {
+  color: #111827;
+  --color-gray-500: #6b7280;
+  --color-gray-700: #374151;
+  --color-gray-900: #111827;
+}
+
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Sembunyikan spinner pada input number. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Select: panah sendiri supaya tidak mepet tepi kanan (seragam di semua dropdown). */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236b7280' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+
+/* Dropdown kompak yang memakai ikon panah sendiri (mis. header kalender). */
+select.select-flat {
+  background-image: none;
+  padding-right: 1.25rem;
+}
+
+/* Fokus keyboard yang terlihat & konsisten di seluruh app. */
+:focus-visible {
+  outline: 2px solid var(--color-jade-600);
+  outline-offset: 2px;
+}
+
+/* Hormati preferensi "kurangi gerakan" dari OS. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Leaflet wajib punya tinggi eksplisit agar peta ter-render. */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #e5e7eb;
+}

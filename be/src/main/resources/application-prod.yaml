@@ -1,0 +1,5 @@
+app:
+  jwt:
+    cookie-secure: ${APP_COOKIE_SECURE:true}
+  # Di produksi same-origin (nginx), jadi tidak perlu CORS.
+  cors-allowed-origins: ""

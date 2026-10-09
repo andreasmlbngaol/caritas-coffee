@@ -1,0 +1,94 @@
+// Padanan app/(main)/analitik/_components/map-inner.tsx.
+import { MapContainer, TileLayer, Circle, Popup, Tooltip } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import { ACCENT, SERIES } from "./palette";
+import { fmt } from "@/lib/format";
+import type { LokasiDesa, LokasiPlot } from "@/api/types";
+
+// Radius lingkaran (meter) dari luas (ha) agar area peta sebanding dengan
+// luas sebenarnya: r = √(A / π). Lantai minimum agar titik kecil tetap terlihat.
+const areaRadiusM = (ha: number, minM = 50) => Math.max(minM, Math.sqrt(Math.max(ha, 0) * 10000 / Math.PI));
+
+export function MapInner({ desa, plot }: { desa: LokasiDesa[]; plot: LokasiPlot[] }) {
+  const points = [...desa.map((d) => [d.lat, d.lng]), ...plot.map((p) => [p.lat, p.lng])] as [number, number][];
+  const center: [number, number] = points.length
+    ? [points.reduce((s, p) => s + p[0], 0) / points.length, points.reduce((s, p) => s + p[1], 0) / points.length]
+    : [-2.5, 118];
+  const zoom = points.length === 1 ? 12 : points.length ? 8 : 5;
+
+  return (
+    <div className="isolate">
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        scrollWheelZoom
+        style={{ height: 520, width: "100%" }}
+        className="z-0 rounded-2xl"
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {desa.map((d, i) => (
+          <Circle
+            key={`d${i}`}
+            center={[d.lat, d.lng]}
+            radius={areaRadiusM(d.luasArealKopiHa)}
+            pathOptions={{ color: ACCENT, fillColor: ACCENT, fillOpacity: 0.35, weight: 2 }}
+          >
+            <Tooltip direction="top">{d.nama}</Tooltip>
+            <Popup>
+              <div className="space-y-1 text-xs">
+                <p className="text-sm font-semibold">{d.nama}</p>
+                <p className="text-gray-500">
+                  Kec. {d.kecamatan}, {d.kabupaten}
+                </p>
+                <p>
+                  Luas areal kopi: <b>{fmt(d.luasArealKopiHa)} ha</b>
+                </p>
+                <p>
+                  Petani kopi: <b>{fmt(d.petaniKopi)}</b>
+                </p>
+                <p>
+                  Penduduk: <b>{fmt(d.penduduk)}</b>
+                </p>
+                {d.ketinggian != null && (
+                  <p>
+                    Ketinggian: <b>{fmt(d.ketinggian)} mdpl</b>
+                  </p>
+                )}
+              </div>
+            </Popup>
+          </Circle>
+        ))}
+        {plot.map((p, i) => (
+          <Circle
+            key={`p${i}`}
+            center={[p.lat, p.lng]}
+            radius={areaRadiusM(p.luasKopiHa)}
+            pathOptions={{ color: SERIES[2], fillColor: SERIES[2], fillOpacity: 0.6, weight: 2 }}
+          >
+            <Tooltip direction="top">{p.petani}</Tooltip>
+            <Popup>
+              <div className="space-y-1 text-xs">
+                <p className="text-sm font-semibold">{p.petani}</p>
+                <p className="text-gray-500">
+                  {p.desa}
+                  {p.hamparan ? ` · ${p.hamparan}` : ""}
+                </p>
+                <p>
+                  Luas kopi: <b>{fmt(p.luasKopiHa, 2)} ha</b>
+                </p>
+                {p.varietas && (
+                  <p>
+                    Varietas: <b>{p.varietas}</b>
+                  </p>
+                )}
+              </div>
+            </Popup>
+          </Circle>
+        ))}
+      </MapContainer>
+    </div>
+  );
+}

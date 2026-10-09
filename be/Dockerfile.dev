@@ -1,0 +1,12 @@
+# Mode DEV: tanpa build produksi. Source di-bind-mount oleh compose,
+# `bootRun --continuous` rekompilasi & restart saat file berubah.
+FROM eclipse-temurin:25-jdk-noble
+WORKDIR /app
+
+COPY gradlew ./
+COPY gradle ./gradle
+COPY settings.gradle.kts build.gradle.kts ./
+RUN chmod +x gradlew
+
+EXPOSE 8080
+CMD ["./gradlew", "bootRun", "--continuous"]
