@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight, ImagePlus, Loader2, Plus, X } from "lucide-react";
+import { useState } from "react";
+import { ImagePlus, Loader2, Plus, X } from "lucide-react";
 import { inputCls } from "@/components/ui";
+import { DatePicker } from "@/components/date-picker";
 import { KoordinatPair } from "@/components/koordinat";
 import { Segmented } from "@/components/yes-no";
 import { STATUS_KEPEMILIKAN, SISTEM_BUDIDAYA } from "./constants";
-import { BULAN_ID } from "@/lib/format";
-import { uploadFile } from "@/lib/api";
+import { uploadFile, fotoUrl } from "@/lib/api";
 import type { PlotDto, NaunganDto } from "@/api/types";
 
 export type PlotDefaults = PlotDto;
@@ -15,6 +15,7 @@ type Entry<T> = { key: string; defaults?: T };
 
 const blankNum = (v: number | null | undefined) => (v == null || v === 0 ? "" : v);
 const blankStr = (v: string | null | undefined) => (v == null || v === "-" ? "" : v);
+const CURRENT_YEAR = new Date().getFullYear();
 
 let counter = 0;
 const nextKey = () => `k${++counter}`;
@@ -191,7 +192,7 @@ function FotoUpload({
           }`}
         >
           {key ? (
-            <img src={`/api/foto/${key}`} alt={`Foto plot ${index + 1}`} className="h-full w-full object-cover" />
+            <img src={fotoUrl(key)} alt={`Foto plot ${index + 1}`} className="h-full w-full object-cover" />
           ) : (
             <span className="flex flex-col items-center gap-1 px-1 text-center text-gray-300 group-hover:text-gray-400">
               <ImagePlus size={22} />
@@ -259,7 +260,7 @@ function TahunTanamFields({ plotIndex, defaults }: { plotIndex: number; defaults
               step="1"
               inputMode="numeric"
               min="1900"
-              max={new Date().getFullYear()}
+              max={CURRENT_YEAR}
               placeholder="mis. 2017"
               data-label={`Tahun tanam kopi ${i + 1}`}
               defaultValue={row.defaults ?? ""}
@@ -332,90 +333,6 @@ function NaunganCard({ index, entry, onRemove }: { index: number; entry: Entry<N
   );
 }
 
-function MonthPicker({ label, name, defaultValue }: { label: string; name: string; defaultValue?: string }) {
-  const today = new Date();
-  const parsed = defaultValue?.match(/^(\d{4})-(\d{2})$/);
-  const [value, setValue] = useState(defaultValue ?? "");
-  const [open, setOpen] = useState(false);
-  const [year, setYear] = useState(parsed ? Number(parsed[1]) : today.getFullYear());
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
-
-  const display = value.match(/^(\d{4})-(\d{2})$/)
-    ? `${BULAN_ID[Number(value.split("-")[1]) - 1]} ${value.split("-")[0]}`
-    : "";
-
-  return (
-    <div ref={ref} className="relative">
-      <span className="mb-1 block text-xs font-medium text-gray-600">{label}</span>
-      <input type="hidden" name={name} value={value} data-label={label} />
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-2 rounded-xl bg-white px-3 py-2.5 text-left text-sm ring-1 ring-inset ring-gray-300 outline-none transition focus:ring-2 focus:ring-inset focus:ring-jade-700"
-      >
-        <span className={display ? "text-gray-900" : "text-gray-500"}>{display || "Pilih bulan…"}</span>
-        <Calendar size={15} className="shrink-0 text-gray-500" />
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-1.5 w-64 rounded-xl bg-white p-3 shadow-lg ring-1 ring-gray-950/5">
-          <div className="mb-2 flex items-center justify-between">
-            <button type="button" onClick={() => setYear((y) => y - 1)} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-sm font-semibold text-gray-900">{year}</span>
-            <button type="button" onClick={() => setYear((y) => y + 1)} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
-              <ChevronRight size={16} />
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-1">
-            {BULAN_ID.map((b, i) => {
-              const iso = `${year}-${String(i + 1).padStart(2, "0")}`;
-              return (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => {
-                    setValue(iso);
-                    setOpen(false);
-                  }}
-                  className={`rounded-lg py-1.5 text-xs transition-colors ${
-                    value === iso ? "bg-jade-800 font-semibold text-white" : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {b.slice(0, 3)}
-                </button>
-              );
-            })}
-          </div>
-          {value && (
-            <div className="mt-2 border-t border-gray-100 pt-2 text-right">
-              <button
-                type="button"
-                onClick={() => {
-                  setValue("");
-                  setOpen(false);
-                }}
-                className="rounded-lg px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100"
-              >
-                Hapus
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function PlotCard({ index, entry, onRemove }: { index: number; entry: Entry<PlotDefaults>; onRemove: () => void }) {
   const d = entry.defaults;
   const p = (f: string) => `plot_${index}_${f}`;
@@ -461,7 +378,7 @@ function PlotCard({ index, entry, onRemove }: { index: number; entry: Entry<Plot
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <MonthPicker label="Bulan & Tahun Pestisida Terakhir" name={p("pestisidaBulanTahun")} defaultValue={d?.pestisidaBulanTahun ?? ""} />
+          <DatePicker mode="month" label="Bulan & Tahun Pestisida Terakhir" name={p("pestisidaBulanTahun")} defaultValue={d?.pestisidaBulanTahun ?? ""} />
           <MiniField label="Jenis Pestisida Terakhir" name={p("pestisidaNama")} placeholder="mis. Basmilang" defaultValue={blankStr(d?.pestisidaNama)} />
         </div>
       </div>

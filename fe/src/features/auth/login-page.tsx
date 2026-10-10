@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { Sprout, MapPin, TrendingUp, ShieldCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { authStore } from "@/lib/auth-store";
+import { internalPath } from "@/lib/guards";
 import type { SessionUser } from "@/api/types";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -30,9 +31,8 @@ export function LoginPage() {
     try {
       const user = await api.post<SessionUser>("/api/auth/login", { username, password });
       authStore.setUser(user);
-      // Guard: hanya path internal, cegah open redirect ke situs luar
-      const dest = callbackUrl.startsWith("/") ? callbackUrl : "/";
-      navigate(dest, { replace: true });
+      // Guard: hanya path internal, cegah open redirect ke situs luar.
+      navigate(internalPath(callbackUrl), { replace: true });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Username atau password salah");
     } finally {

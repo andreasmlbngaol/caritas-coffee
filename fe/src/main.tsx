@@ -6,14 +6,17 @@ import "./styles/globals.css";
 import { queryClient } from "./app/query-client";
 import { router } from "./app/router";
 import { authStore } from "./lib/auth-store";
+import { ErrorBoundary } from "./components/error-boundary";
 
 // Muat sesi sekali saat boot; ProtectedRoute menunggu status "loading" selesai.
 void authStore.refresh();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

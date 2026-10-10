@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Plus, FileText, FileDown, Pencil } from "lucide-react";
 import { pageWide, ListSkeleton } from "@/components/ui";
-import { SortHeader, parseSort, compareRows } from "@/components/sort";
+import { ErrorState } from "@/components/error-boundary";
+import { SortHeader } from "@/components/sort";
+import { parseSort, compareRows } from "@/components/sort-utils";
 import { useAuth } from "@/features/auth/use-auth";
 import { DesaDeleteButton } from "./delete-button";
 import { useDesaList } from "./queries";
@@ -11,7 +13,7 @@ import type { DesaListDto } from "@/api/types";
 const SORT_COLUMNS = ["desa", "kecamatan", "createdBy"] as const;
 type SortColumn = (typeof SORT_COLUMNS)[number];
 
-function rowValue(row: DesaListDto, column: string): string | null {
+function rowValue(row: DesaListDto, column: SortColumn): string | null {
   switch (column) {
     case "desa":
       return row.desa;
@@ -30,7 +32,7 @@ export function DesaListPage() {
   const [params] = useSearchParams();
   const { sort, dir } = parseSort<SortColumn>(params, SORT_COLUMNS, "desa");
 
-  const { data, isPending } = useDesaList();
+  const { data, isPending, isError, refetch } = useDesaList();
 
   const items = useMemo(() => {
     const sorted = [...(data ?? [])].sort((a, b) =>
@@ -40,6 +42,7 @@ export function DesaListPage() {
   }, [data, sort, dir]);
 
   if (isPending) return <ListSkeleton />;
+  if (isError) return <ErrorState message="Gagal memuat data desa." onRetry={() => void refetch()} />;
 
   return (
     <main className={pageWide}>

@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Plus, Pencil, Search } from "lucide-react";
 import { pageWide, ListSkeleton } from "@/components/ui";
-import { SortHeader, parseSort, compareRows } from "@/components/sort";
+import { ErrorState } from "@/components/error-boundary";
+import { SortHeader } from "@/components/sort";
+import { parseSort, compareRows } from "@/components/sort-utils";
 import { KelompokDeleteButton } from "./delete-button";
 import { useKelompokList } from "./queries";
 import type { KelompokTaniDto } from "@/api/types";
@@ -10,7 +12,7 @@ import type { KelompokTaniDto } from "@/api/types";
 const SORT_COLUMNS = ["nama", "kode", "desa", "jumlahPetani"] as const;
 type SortColumn = (typeof SORT_COLUMNS)[number];
 
-function rowValue(row: KelompokTaniDto, column: string): string | number | null {
+function rowValue(row: KelompokTaniDto, column: SortColumn): string | number | null {
   switch (column) {
     case "nama":
       return row.nama;
@@ -30,7 +32,7 @@ export function KelompokTaniListPage() {
   const q = params.get("q") ?? "";
   const { sort, dir } = parseSort<SortColumn>(params, SORT_COLUMNS, "kode");
 
-  const { data, isPending } = useKelompokList();
+  const { data, isPending, isError, refetch } = useKelompokList();
 
   const items = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -47,6 +49,7 @@ export function KelompokTaniListPage() {
   }, [data, q, sort, dir]);
 
   if (isPending) return <ListSkeleton />;
+  if (isError) return <ErrorState message="Gagal memuat data kelompok tani." onRetry={() => void refetch()} />;
 
   return (
     <main className={pageWide}>
@@ -79,6 +82,7 @@ export function KelompokTaniListPage() {
           <input
             name="q"
             defaultValue={q}
+            aria-label="Cari kelompok tani"
             placeholder="Cari nama / kode / desa…"
             className="w-full rounded-xl bg-white py-2.5 pl-10 pr-3 text-sm ring-1 ring-inset ring-gray-300 outline-none transition placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-jade-700"
           />

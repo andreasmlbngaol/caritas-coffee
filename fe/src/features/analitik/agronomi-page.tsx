@@ -1,7 +1,9 @@
 // Padanan app/(main)/analitik/agronomi/page.tsx.
 import { pageWide, AnalyticsSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { STATUS_KEPEMILIKAN, SISTEM_BUDIDAYA } from "@/features/petani/constants";
-import { ChartCard, StatTile, fmt } from "./analytics-ui";
+import { ChartCard, StatTile } from "./analytics-ui";
+import { fmt } from "@/lib/format";
 import { HBarChartX, DonutChartX, BarChartX } from "./charts";
 import { useAgronomi } from "./queries";
 
@@ -9,8 +11,9 @@ const labelOf = (opts: readonly { value: string; label: string }[], v: string) =
   opts.find((o) => o.value === v)?.label ?? v;
 
 export function AgronomiPage() {
-  const { data: a, isPending } = useAgronomi();
-  if (isPending || !a) return <AnalyticsSkeleton />;
+  const { data: a, isPending, isError, refetch } = useAgronomi();
+  if (isPending) return <AnalyticsSkeleton />;
+  if (isError || !a) return <ErrorState message="Gagal memuat data analitik agronomi." onRetry={() => void refetch()} />;
 
   const short = (s: string) => (s.length > 26 ? s.slice(0, 24).trimEnd() + "…" : s);
 

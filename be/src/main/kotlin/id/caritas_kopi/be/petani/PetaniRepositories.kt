@@ -1,6 +1,9 @@
 package id.caritas_kopi.be.petani
 
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import java.util.Optional
 import java.util.UUID
 
@@ -14,38 +17,61 @@ interface PetaniRepository : JpaRepository<Petani, UUID> {
 
 interface PlotPetaniRepository : JpaRepository<PlotPetani, UUID> {
     fun findByPetaniIdOrderByNomorAsc(petaniId: UUID): List<PlotPetani>
-    fun deleteByPetaniId(petaniId: UUID)
+
+    // Bulk delete langsung (bukan load-lalu-remove): update() mengganti seluruh
+    // anak, dan insert baru HARUS terjadi setelah delete ter-flush. Tanpa ini
+    // Hibernate bisa men-flush insert lebih dulu -> langgar UNIQUE(petani_id, ...).
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from PlotPetani e where e.petaniId = :petaniId")
+    fun deleteByPetaniId(@Param("petaniId") petaniId: UUID)
 }
 
 interface TanamanNaunganRepository : JpaRepository<TanamanNaungan, UUID> {
     fun findByPetaniId(petaniId: UUID): List<TanamanNaungan>
-    fun deleteByPetaniId(petaniId: UUID)
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from TanamanNaungan e where e.petaniId = :petaniId")
+    fun deleteByPetaniId(@Param("petaniId") petaniId: UUID)
 }
 
 interface PraktikGapRepository : JpaRepository<PraktikGap, UUID> {
     fun findByPetaniId(petaniId: UUID): List<PraktikGap>
-    fun deleteByPetaniId(petaniId: UUID)
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from PraktikGap e where e.petaniId = :petaniId")
+    fun deleteByPetaniId(@Param("petaniId") petaniId: UUID)
 }
 
 interface RiwayatProduksiRepository : JpaRepository<RiwayatProduksi, UUID> {
     fun findByPetaniId(petaniId: UUID): List<RiwayatProduksi>
-    fun deleteByPetaniId(petaniId: UUID)
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from RiwayatProduksi e where e.petaniId = :petaniId")
+    fun deleteByPetaniId(@Param("petaniId") petaniId: UUID)
 }
 
 interface ProdukDijualRepository : JpaRepository<ProdukDijual, UUID> {
     fun findByPetaniId(petaniId: UUID): List<ProdukDijual>
-    fun deleteByPetaniId(petaniId: UUID)
-    fun findByDijualTrue(): List<ProdukDijual>
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from ProdukDijual e where e.petaniId = :petaniId")
+    fun deleteByPetaniId(@Param("petaniId") petaniId: UUID)
 }
 
 interface PasarPetaniRepository : JpaRepository<PasarPetani, UUID> {
     fun findByPetaniId(petaniId: UUID): List<PasarPetani>
-    fun deleteByPetaniId(petaniId: UUID)
     fun findByAktifTrue(): List<PasarPetani>
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from PasarPetani e where e.petaniId = :petaniId")
+    fun deleteByPetaniId(@Param("petaniId") petaniId: UUID)
 }
 
 interface KondisiKebunRepository : JpaRepository<KondisiKebun, UUID> {
     fun findByPetaniId(petaniId: UUID): List<KondisiKebun>
-    fun deleteByPetaniId(petaniId: UUID)
     fun findByJawabanTrue(): List<KondisiKebun>
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from KondisiKebun e where e.petaniId = :petaniId")
+    fun deleteByPetaniId(@Param("petaniId") petaniId: UUID)
 }

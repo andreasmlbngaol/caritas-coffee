@@ -205,4 +205,41 @@ class ExportRenderTest {
     fun `escape html`() {
         assertEquals("a &amp; b &lt;c&gt;", Html.esc("a & b <c>"))
     }
+
+    @Test
+    fun `docx grid tabel section landscape memakai lebar section-nya`() {
+        // Regresi: dulu semua tabel memakai lebar section terakhir (portrait),
+        // sehingga tblGrid section B (landscape) salah. Section B = tabel pertama.
+        val docx = PetaniDocx.build(buildPetaniExportModel(petani(), "http://localhost"))
+        org.apache.poi.xwpf.usermodel.XWPFDocument(java.io.ByteArrayInputStream(docx)).use { doc ->
+            fun gridSum(t: org.apache.poi.xwpf.usermodel.XWPFTable): Long {
+                val g = t.ctTbl.tblGrid ?: return -1
+                var total = 0L
+                for (i in 0 until g.sizeOfGridColArray()) {
+                    total += g.getGridColArray(i).w.toString().toLongOrNull() ?: 0L
+                }
+                return total
+            }
+            val sums = doc.tables.map { gridSum(it) }
+            val landscape = sums.max()
+            val portrait = sums.min()
+            assertTrue(landscape > portrait, "grid landscape ($landscape) harus > portrait ($portrait): $sums")
+        }
+    }
+
+    @Test
+    fun `format angka aman dipakai paralel`() {
+        // Regresi: NumberFormat bersama tidak thread-safe. Jalankan format serentak
+        // dan pastikan semua hasil konsisten (ribuan dipisah titik).
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(8)
+        try {
+            val tasks = (1..200).map {
+                pool.submit<String> { ExportSupport.num(1234567.0) }
+            }
+            val results = tasks.map { it.get() }.toSet()
+            assertEquals(setOf("1.234.567"), results)
+        } finally {
+            pool.shutdownNow()
+        }
+    }
 }

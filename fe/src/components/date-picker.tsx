@@ -5,6 +5,9 @@ import { BULAN_ID } from "@/lib/format";
 const HARI = ["Sn", "Sl", "Rb", "Km", "Jm", "Sb", "Mg"]; // Senin pertama
 const HARI_PENUH = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
+// Tanggal "hari ini" dibaca sekali saat modul dimuat (bukan tiap render).
+const TODAY = new Date();
+
 // "2026-06-15" → { y, m, d } lokal (tanpa masalah timezone)
 function parseISO(v: string): { y: number; m: number; d: number } | null {
   const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -24,23 +27,26 @@ export function DatePicker({
   required,
   defaultValue,
   yearRange,
-  placeholder = "Pilih tanggal…",
+  placeholder,
+  mode = "date",
 }: {
   name: string;
   label: string;
   required?: boolean;
-  defaultValue?: string; // "YYYY-MM-DD"
-  yearRange?: [number, number]; // bila diisi → dropdown tahun muncul
+  defaultValue?: string; // "YYYY-MM-DD" (date) atau "YYYY-MM" (month)
+  yearRange?: [number, number]; // bila diisi → dropdown tahun muncul (mode date)
   placeholder?: string;
+  mode?: "date" | "month";
 }) {
-  const today = new Date();
-  const parsed = defaultValue ? parseISO(defaultValue) : null;
+  const isMonth = mode === "month";
+  const parsedDate = !isMonth && defaultValue ? parseISO(defaultValue) : null;
+  const parsedMonth = isMonth && defaultValue?.match(/^(\d{4})-(\d{2})$/) ? defaultValue : null;
 
   const [value, setValue] = useState(defaultValue ?? "");
   const [open, setOpen] = useState(false);
   const [view, setView] = useState({
-    y: parsed?.y ?? today.getFullYear(),
-    m: parsed?.m ?? today.getMonth(),
+    y: parsedDate?.y ?? (parsedMonth ? Number(parsedMonth.slice(0, 4)) : TODAY.getFullYear()),
+    m: parsedDate?.m ?? TODAY.getMonth(),
   });
   const ref = useRef<HTMLDivElement>(null);
 
@@ -58,6 +64,10 @@ export function DatePicker({
     setValue(toISO(view.y, view.m, d));
     setOpen(false);
   }
+  function pickMonth(m: number) {
+    setValue(`${view.y}-${pad(m + 1)}`);
+    setOpen(false);
+  }
 
   function prevMonth() {
     setView((v) => (v.m === 0 ? { y: v.y - 1, m: 11 } : { ...v, m: v.m - 1 }));
@@ -71,16 +81,20 @@ export function DatePicker({
   const firstOffset = dayIdx(view.y, view.m, 1);
 
   const isToday = (d: number) =>
-    view.y === today.getFullYear() && view.m === today.getMonth() && d === today.getDate();
+    view.y === TODAY.getFullYear() && view.m === TODAY.getMonth() && d === TODAY.getDate();
   const isSelected = (d: number) =>
     selected !== null && selected.y === view.y && selected.m === view.m && selected.d === d;
 
-  const display = selected
-    ? `${HARI_PENUH[dayIdx(selected.y, selected.m, selected.d)]}, ${selected.d} ${BULAN_ID[selected.m]} ${selected.y}`
-    : "";
+  const display = isMonth
+    ? parsedMonth
+      ? `${BULAN_ID[Number(parsedMonth.slice(5, 7)) - 1]} ${parsedMonth.slice(0, 4)}`
+      : ""
+    : selected
+      ? `${HARI_PENUH[dayIdx(selected.y, selected.m, selected.d)]}, ${selected.d} ${BULAN_ID[selected.m]} ${selected.y}`
+      : "";
 
   const years: number[] = [];
-  if (yearRange) {
+  if (yearRange && !isMonth) {
     for (let y = yearRange[1]; y >= yearRange[0]; y--) years.push(y);
   }
 
@@ -101,17 +115,20 @@ export function DatePicker({
           type="button"
           id={`dp_${name}`}
           onClick={() => setOpen((o) => !o)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
           className="flex w-full items-center justify-between gap-2 rounded-xl bg-white px-3 py-2.5 text-left text-sm ring-1 ring-inset ring-gray-300 outline-none transition focus:ring-2 focus:ring-inset focus:ring-jade-700"
         >
           <span className={display ? "text-gray-900" : "text-gray-500"}>
-            {display || placeholder}
+            {display || placeholder || (isMonth ? "Pilih bulan…" : "Pilih tanggal…")}
           </span>
           <Calendar size={15} className="shrink-0 text-gray-500" />
         </button>
         {value && !required && (
           <button
             type="button"
-            title="Hapus tanggal"
+            title={isMonth ? "Hapus bulan" : "Hapus tanggal"}
+            aria-label={isMonth ? "Hapus bulan" : "Hapus tanggal"}
             onClick={() => setValue("")}
             className="absolute right-9 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-300 transition-colors hover:text-gray-500"
           >
@@ -121,43 +138,29 @@ export function DatePicker({
       </div>
 
       {open && (
-        <div className="absolute z-50 mt-1.5 w-72 rounded-xl bg-white p-3 shadow-lg ring-1 ring-gray-950/5">
+        <div className={`absolute z-50 mt-1.5 rounded-xl bg-white p-3 shadow-lg ring-1 ring-gray-950/5 ${isMonth ? "w-64" : "w-72"}`}>
           <div className="mb-2 flex items-center justify-between gap-1">
             <button
               type="button"
-              onClick={prevMonth}
+              onClick={isMonth ? () => setView((v) => ({ ...v, y: v.y - 1 })) : prevMonth}
+              aria-label={isMonth ? "Tahun sebelumnya" : "Bulan sebelumnya"}
               className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100"
             >
               <ChevronLeft size={16} />
             </button>
-            <div className="flex items-center gap-1">
-              <div className="relative">
-                <select
-                  value={view.m}
-                  onChange={(e) => setView((v) => ({ ...v, m: Number(e.target.value) }))}
-                  className="select-flat cursor-pointer appearance-none rounded-md bg-transparent py-0.5 pl-1.5 pr-5 text-sm font-semibold text-gray-900 outline-none hover:bg-gray-100"
-                >
-                  {BULAN_ID.map((nama, i) => (
-                    <option key={nama} value={i}>
-                      {nama}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={12}
-                  className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-gray-500"
-                />
-              </div>
-              {yearRange ? (
+            {isMonth ? (
+              <span className="text-sm font-semibold text-gray-900">{view.y}</span>
+            ) : (
+              <div className="flex items-center gap-1">
                 <div className="relative">
                   <select
-                    value={view.y}
-                    onChange={(e) => setView((v) => ({ ...v, y: Number(e.target.value) }))}
+                    value={view.m}
+                    onChange={(e) => setView((v) => ({ ...v, m: Number(e.target.value) }))}
                     className="select-flat cursor-pointer appearance-none rounded-md bg-transparent py-0.5 pl-1.5 pr-5 text-sm font-semibold text-gray-900 outline-none hover:bg-gray-100"
                   >
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
+                    {BULAN_ID.map((nama, i) => (
+                      <option key={nama} value={i}>
+                        {nama}
                       </option>
                     ))}
                   </select>
@@ -166,65 +169,112 @@ export function DatePicker({
                     className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-gray-500"
                   />
                 </div>
-              ) : (
-                <span className="text-sm font-semibold text-gray-900">{view.y}</span>
-              )}
-            </div>
+                {yearRange ? (
+                  <div className="relative">
+                    <select
+                      value={view.y}
+                      onChange={(e) => setView((v) => ({ ...v, y: Number(e.target.value) }))}
+                      className="select-flat cursor-pointer appearance-none rounded-md bg-transparent py-0.5 pl-1.5 pr-5 text-sm font-semibold text-gray-900 outline-none hover:bg-gray-100"
+                    >
+                      {years.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={12}
+                      className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-gray-500"
+                    />
+                  </div>
+                ) : (
+                  <span className="text-sm font-semibold text-gray-900">{view.y}</span>
+                )}
+              </div>
+            )}
             <button
               type="button"
-              onClick={nextMonth}
+              onClick={isMonth ? () => setView((v) => ({ ...v, y: v.y + 1 })) : nextMonth}
+              aria-label={isMonth ? "Tahun berikutnya" : "Bulan berikutnya"}
               className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100"
             >
               <ChevronRight size={16} />
             </button>
           </div>
 
-          <div className="mb-1 grid grid-cols-7 text-center text-[11px] font-medium text-gray-500">
-            {HARI.map((h) => (
-              <span key={h} className="py-1">
-                {h}
-              </span>
-            ))}
-          </div>
+          {isMonth ? (
+            <div className="grid grid-cols-3 gap-1">
+              {BULAN_ID.map((b, i) => {
+                const iso = `${view.y}-${pad(i + 1)}`;
+                return (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => pickMonth(i)}
+                    aria-label={`${b} ${view.y}`}
+                    className={`rounded-lg py-1.5 text-xs transition-colors ${
+                      value === iso ? "bg-jade-800 font-semibold text-white" : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    {b.slice(0, 3)}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <>
+              <div className="mb-1 grid grid-cols-7 text-center text-[11px] font-medium text-gray-500">
+                {HARI.map((h) => (
+                  <span key={h} className="py-1">
+                    {h}
+                  </span>
+                ))}
+              </div>
 
-          <div className="grid grid-cols-7 gap-0.5">
-            {Array.from({ length: firstOffset }).map((_, i) => (
-              <span key={`x${i}`} />
-            ))}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const d = i + 1;
-              return (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => pick(d)}
-                  className={`rounded-lg py-1.5 text-sm transition-colors ${
-                    isSelected(d)
-                      ? "bg-jade-800 font-semibold text-white"
-                      : isToday(d)
-                        ? "bg-jade-50 font-medium text-jade-800"
-                        : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {d}
-                </button>
-              );
-            })}
-          </div>
+              <div className="grid grid-cols-7 gap-0.5">
+                {Array.from({ length: firstOffset }).map((_, i) => (
+                  <span key={`x${i}`} />
+                ))}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const d = i + 1;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => pick(d)}
+                      aria-label={`${d} ${BULAN_ID[view.m]} ${view.y}`}
+                      aria-current={isToday(d) ? "date" : undefined}
+                      className={`rounded-lg py-1.5 text-sm transition-colors ${
+                        isSelected(d)
+                          ? "bg-jade-800 font-semibold text-white"
+                          : isToday(d)
+                            ? "bg-jade-50 font-medium text-jade-800"
+                            : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           <div className="mt-2 flex justify-between border-t border-gray-100 pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                const iso = toISO(today.getFullYear(), today.getMonth(), today.getDate());
-                setValue(iso);
-                setView({ y: today.getFullYear(), m: today.getMonth() });
-                setOpen(false);
-              }}
-              className="rounded-lg px-2 py-1 text-xs font-medium text-jade-700 transition-colors hover:bg-jade-50"
-            >
-              Hari ini
-            </button>
+            {!isMonth && (
+              <button
+                type="button"
+                onClick={() => {
+                  const iso = toISO(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+                  setValue(iso);
+                  setView({ y: TODAY.getFullYear(), m: TODAY.getMonth() });
+                  setOpen(false);
+                }}
+                className="rounded-lg px-2 py-1 text-xs font-medium text-jade-700 transition-colors hover:bg-jade-50"
+              >
+                Hari ini
+              </button>
+            )}
             {!required && value && (
               <button
                 type="button"
@@ -232,7 +282,7 @@ export function DatePicker({
                   setValue("");
                   setOpen(false);
                 }}
-                className="rounded-lg px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100"
+                className="ml-auto rounded-lg px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100"
               >
                 Hapus
               </button>

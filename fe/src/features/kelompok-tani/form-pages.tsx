@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { pageForm, ListSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { KelompokTaniForm } from "./form";
 import { useKelompokList } from "./queries";
 
@@ -26,10 +27,12 @@ export function KelompokTaniBaruPage() {
 
 export function KelompokTaniEditPage() {
   const { id = "" } = useParams();
-  const { data, isPending } = useKelompokList();
+  const { data, isPending, isError, refetch } = useKelompokList();
   const kt = data?.find((k) => k.id === id);
 
-  if (isPending || !kt) return <ListSkeleton />;
+  if (isPending) return <ListSkeleton />;
+  if (isError) return <ErrorState message="Gagal memuat data kelompok tani." onRetry={() => void refetch()} />;
+  if (!kt) return <ErrorState title="Data tidak ditemukan" message="Kelompok tani ini tidak ada atau sudah dihapus." />;
 
   return (
     <main className={pageForm}>

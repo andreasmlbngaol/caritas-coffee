@@ -1,16 +1,19 @@
 // Padanan app/(main)/analitik/gap/page.tsx.
 import { pageWide, AnalyticsSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { GAP_GROUPS } from "@/features/petani/constants";
-import { ChartCard, StatTile, Meter, fmt } from "./analytics-ui";
+import { ChartCard, StatTile, Meter } from "./analytics-ui";
+import { fmt } from "@/lib/format";
 import { ProportionBarX } from "./charts";
 import { useGapAdoption } from "./queries";
 
 export function GapPage() {
-  const { data, isPending } = useGapAdoption();
-  if (isPending || !data) return <AnalyticsSkeleton />;
+  const { data, isPending, isError, refetch } = useGapAdoption();
+  if (isPending) return <AnalyticsSkeleton />;
+  if (isError || !data) return <ErrorState message="Gagal memuat data analitik GAP." onRetry={() => void refetch()} />;
 
   const { totalPetani, items, adopsiKeseluruhan } = data;
-  const labelOf = new Map(GAP_GROUPS.flatMap((g) => g.items).map((i) => [i.jenis, i.label]));
+  const labelOf = new Map<string, string>(GAP_GROUPS.flatMap((g) => g.items).map((i) => [i.jenis, i.label]));
   const itemOf = new Map(items.map((i) => [i.jenis, i]));
 
   const ranked = [...items].sort((a, b) => b.pctYa - a.pctYa);

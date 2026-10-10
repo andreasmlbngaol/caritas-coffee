@@ -22,7 +22,7 @@ class DesaService(
     @Transactional(readOnly = true)
     fun list(me: AuthPrincipal): List<DesaListDto> {
         val rows = if (me.isAdmin) baselineRepo.findAllByOrderByCreatedAtDesc()
-        else baselineRepo.findAllByOrderByCreatedAtDesc().filter { it.createdById == me.id }
+        else baselineRepo.findAllByCreatedByIdOrderByCreatedAtDesc(me.id)
         if (rows.isEmpty()) return emptyList()
 
         val desaMap = wilayah.desaMap(rows.map { it.desaKode })

@@ -4,19 +4,29 @@
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  /** Peta error per-field dari BE (bila ada): { namaField: pesan }. */
+  fields?: Record<string, string>;
+  constructor(status: number, message: string, fields?: Record<string, string>) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.fields = fields;
   }
 }
 
-async function parseError(res: Response): Promise<string> {
+async function parseError(res: Response): Promise<{ message: string; fields?: Record<string, string> }> {
   try {
-    const data = (await res.json()) as { error?: string; message?: string };
-    return data.error ?? data.message ?? `Kesalahan ${res.status}`;
+    const data = (await res.json()) as {
+      error?: string;
+      message?: string;
+      fields?: Record<string, string>;
+    };
+    return {
+      message: data.error ?? data.message ?? `Kesalahan ${res.status}`,
+      fields: data.fields,
+    };
   } catch {
-    return `Kesalahan ${res.status}`;
+    return { message: `Kesalahan ${res.status}` };
   }
 }
 
@@ -31,10 +41,25 @@ async function request<T>(
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  if (!res.ok) throw new ApiError(res.status, await parseError(res));
+  if (!res.ok) {
+    const { message, fields } = await parseError(res);
+    throw new ApiError(res.status, message, fields);
+  }
   if (res.status === 204) return undefined as T;
   const text = await res.text();
-  return (text ? JSON.parse(text) : undefined) as T;
+  if (!text) return undefined as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // Body non-JSON (mis. halaman error HTML dari proxy) - jangan lempar
+    // SyntaxError mentah; jadikan ApiError agar pesan error konsisten.
+    throw new ApiError(res.status, `Respons tidak valid dari server (${res.status})`);
+  }
+}
+
+/** URL foto dari key (`petani/xxx.webp`) - satu tempat, bukan hardcode di tiap komponen. */
+export function fotoUrl(key: string): string {
+  return `/api/foto/${key}`;
 }
 
 export const api = {
@@ -54,6 +79,9 @@ export async function uploadFile(file: File): Promise<{ key: string }> {
     credentials: "include",
     body: fd,
   });
-  if (!res.ok) throw new ApiError(res.status, await parseError(res));
+  if (!res.ok) {
+    const { message, fields } = await parseError(res);
+    throw new ApiError(res.status, message, fields);
+  }
   return (await res.json()) as { key: string };
 }

@@ -156,6 +156,15 @@ memvalidasi MIME (jpeg/png/webp/heic/heif, maks 10 MB), me-resize/rotate
 (Scrimage, WebP q90), dan menyajikan lewat `GET /api/foto/{key}` (auth, blokir
 path traversal).
 
+Kalau memindahkan data dari Cloudflare R2 (aplikasi lama), foto tidak perlu
+diubah di DB - key `petani/<uuid>.<ext>` sudah cocok dengan layout lokal. Cukup
+pindahkan byte-nya:
+
+```bash
+R2_ENDPOINT=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... R2_BUCKET_NAME=... \
+  scripts/import-r2-photos.sh prod      # atau: dev
+```
+
 ## Ekspor PDF/DOCX
 
 Dijalankan di BE (data & file foto ada di sana). Tersedia

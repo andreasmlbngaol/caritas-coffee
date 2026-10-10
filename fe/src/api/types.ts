@@ -40,8 +40,39 @@ export type KategoriPasar =
   | "SPECIALTY"
   | "ORGANIK"
   | "LAINNYA";
-export type JenisPraktikGap = string;
-export type JenisKondisiKebun = string;
+export type JenisPraktikGap =
+  | "PEMANGKASAN_KOPI"
+  | "PEMANGKASAN_NAUNGAN"
+  | "PENGENDALIAN_GULMA"
+  | "PEMUPUKAN"
+  | "PEREMAJAAN_TANAMAN"
+  | "PENGENDALIAN_PBKO"
+  | "PENGENDALIAN_KARAT_DAUN"
+  | "PESTISIDA_SESUAI_DOSIS"
+  | "PENYIMPANAN_PESTISIDA"
+  | "TERAS_SENGKEDAN"
+  | "COVER_CROP"
+  | "RORAK_RESAPAN"
+  | "LIMBAH_PULP"
+  | "PANEN_SELEKTIF"
+  | "SORTASI_CHERRY"
+  | "PENJEMURAN_BERSIH"
+  | "PENYIMPANAN_HASIL"
+  | "TANPA_BAKAR_LAHAN"
+  | "TANPA_KIMIA_TERLARANG"
+  | "APD_PESTISIDA"
+  | "TANPA_PEKERJA_ANAK";
+export type JenisKondisiKebun =
+  | "KEPEMILIKAN_JELAS"
+  | "BATAS_KONSERVASI"
+  | "BATAS_HUTAN_LINDUNG"
+  | "DEKAT_SUNGAI"
+  | "DEKAT_MATA_AIR"
+  | "POHON_NAUNGAN"
+  | "KONSERVASI_TANAH"
+  | "PERNAH_BAKAR_LAHAN"
+  | "KONFLIK_SATWA"
+  | "EROSI_LONGSOR";
 
 // ---------- Auth ----------
 export interface SessionUser {
@@ -129,7 +160,7 @@ export interface GapDto {
   keterangan: string | null;
 }
 
-export interface ProduksiDto {
+export interface ProduksiPetaniDto {
   id: string;
   tahun: number;
   satuan: SatuanProduksi | null;
@@ -200,7 +231,7 @@ export interface PetaniDetailDto {
   plot: PlotDto[];
   naungan: NaunganDto[];
   praktikGap: GapDto[];
-  produksi: ProduksiDto[];
+  produksi: ProduksiPetaniDto[];
   produk: ProdukDto[];
   pasar: PasarDto[];
   kondisiKebun: KondisiDto[];
@@ -357,7 +388,7 @@ export interface TopDesa {
   total: number;
 }
 
-export interface ProduksiDto {
+export interface ProduksiAnalitikDto {
   tahunTerbaru: number | null;
   byTahun: ProduksiTahun[];
   topDesa: TopDesa[];

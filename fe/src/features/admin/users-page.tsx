@@ -1,4 +1,5 @@
 import { ListSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { useAuth } from "@/features/auth/use-auth";
 import { NewUserForm } from "./new-user-form";
 import { ResetPasswordButton } from "./reset-password-button";
@@ -22,7 +23,7 @@ function ToggleActiveButton({ user, isSelf }: { user: UserDto; isSelf: boolean }
 
 export function UsersPage() {
   const { user: me } = useAuth();
-  const { data, isPending } = useUserList();
+  const { data, isPending, isError, refetch } = useUserList();
 
   const users = [...(data ?? [])].sort((a, b) => {
     if (a.role !== b.role) return a.role === "ADMIN" ? -1 : 1;
@@ -30,6 +31,7 @@ export function UsersPage() {
   });
 
   if (isPending) return <ListSkeleton />;
+  if (isError) return <ErrorState message="Gagal memuat daftar pengguna." onRetry={() => void refetch()} />;
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-8">

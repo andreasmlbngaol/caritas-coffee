@@ -8,7 +8,7 @@ import type {
   KonservasiDto,
   LokasiDto,
   PasarProdukDto,
-  ProduksiDto,
+  ProduksiAnalitikDto,
   RingkasanDto,
   WilayahAnalitikDto,
 } from "@/api/types";
@@ -41,7 +41,7 @@ export function useGapAdoption() {
 export function useProduksi() {
   return useQuery({
     queryKey: analitikKeys.produksi,
-    queryFn: () => api.get<ProduksiDto>("/api/analitik/produksi"),
+    queryFn: () => api.get<ProduksiAnalitikDto>("/api/analitik/produksi"),
   });
 }
 

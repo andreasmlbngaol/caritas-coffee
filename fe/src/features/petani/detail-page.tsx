@@ -1,7 +1,10 @@
+import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { ArrowLeft, FileDown, FileText, Pencil } from "lucide-react";
 import { pageWide, ListSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { idNum, fmtBulanTahun, fmtDate } from "@/lib/format";
+import { fotoUrl } from "@/lib/api";
 import {
   GAP_GROUPS,
   KONDISI_KEBUN,
@@ -23,8 +26,6 @@ const num = (v: number | null | undefined) => (v == null ? "-" : idNum.format(v)
 const bool = (v: boolean | null | undefined) => (v == null ? "-" : v ? "Ya" : "Tidak");
 const gap = (v: string | null | undefined) =>
   v == null ? "-" : v === "YA" ? "Ya" : v === "TIDAK" ? "Tidak" : "Kadang";
-
-import type { ReactNode } from "react";
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -56,9 +57,11 @@ function KVGrid({ items }: { items: [string, ReactNode][] }) {
 
 export function PetaniDetailPage() {
   const { id = "" } = useParams();
-  const { data: p, isPending } = usePetaniDetail(id);
+  const { data: p, isPending, isError, refetch } = usePetaniDetail(id);
 
-  if (isPending || !p) return <ListSkeleton />;
+  if (isPending) return <ListSkeleton />;
+  if (isError) return <ErrorState message="Gagal memuat data petani." onRetry={() => void refetch()} />;
+  if (!p) return <ErrorState title="Data tidak ditemukan" message="Data petani ini tidak ada atau sudah dihapus." />;
 
   const statusLabel = (v: string | null) => STATUS_KEPEMILIKAN.find((s) => s.value === v)?.label ?? (v ?? "-");
   const sistemLabel = (v: string | null) => SISTEM_BUDIDAYA.find((s) => s.value === v)?.label ?? (v ?? "-");
@@ -151,9 +154,9 @@ export function PetaniDetailPage() {
                   <div className="flex items-start justify-between gap-4">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Plot {pl.nomor}</h3>
                     {pl.fotoKey && (
-                      <a href={`/api/foto/${pl.fotoKey}`} target="_blank" rel="noreferrer">
+                      <a href={fotoUrl(pl.fotoKey)} target="_blank" rel="noreferrer">
                         <img
-                          src={`/api/foto/${pl.fotoKey}`}
+                          src={fotoUrl(pl.fotoKey)}
                           alt={`Foto plot ${pl.nomor}`}
                           className="h-20 w-20 rounded-lg object-cover ring-1 ring-gray-200"
                         />

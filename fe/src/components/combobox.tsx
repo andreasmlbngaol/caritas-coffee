@@ -27,6 +27,7 @@ export function Combobox({
   const [query, setQuery] = useState("");
   const [hi, setHi] = useState(0);
   const listId = useId();
+  const inputId = useId();
 
   const selected = options.find((o) => o.value === value);
 
@@ -35,6 +36,10 @@ export function Combobox({
     const all = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
     return all.slice(0, 100);
   }, [options, query]);
+
+  // `hi` bisa menunjuk di luar batas saat `filtered` menyusut - jepit agar
+  // Enter selalu memilih item yang benar-benar disorot.
+  const activeHi = Math.min(hi, Math.max(0, filtered.length - 1));
 
   function pick(opt: Option) {
     onChange(opt.value);
@@ -45,7 +50,7 @@ export function Combobox({
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
       e.preventDefault();
-      const item = filtered[hi];
+      const item = filtered[activeHi];
       if (open && item) pick(item);
       else setOpen(true);
     } else if (e.key === "ArrowDown") {
@@ -63,7 +68,7 @@ export function Combobox({
   return (
     <div className="relative">
       {label && (
-        <label className="mb-1.5 block text-xs font-medium text-gray-600">
+        <label htmlFor={inputId} className="mb-1.5 block text-xs font-medium text-gray-600">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
@@ -79,9 +84,11 @@ export function Combobox({
 
       <div className="relative">
         <input
+          id={inputId}
           role="combobox"
           aria-expanded={open}
           aria-controls={open ? listId : undefined}
+          aria-activedescendant={open && filtered[activeHi] ? `${listId}-${activeHi}` : undefined}
           aria-autocomplete="list"
           aria-label={label}
           disabled={disabled}
@@ -120,13 +127,14 @@ export function Combobox({
               filtered.map((o, i) => (
                 <button
                   key={o.value}
+                  id={`${listId}-${i}`}
                   type="button"
                   role="option"
                   aria-selected={o.value === value}
                   onClick={() => pick(o)}
                   onMouseEnter={() => setHi(i)}
                   className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm ${
-                    i === hi ? "bg-gray-100" : ""
+                    i === activeHi ? "bg-gray-100" : ""
                   } ${o.value === value ? "font-medium text-jade-800" : "text-gray-700"}`}
                 >
                   <span className="truncate">{o.label}</span>

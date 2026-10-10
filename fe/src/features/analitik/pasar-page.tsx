@@ -1,13 +1,16 @@
 // Padanan app/(main)/analitik/pasar/page.tsx.
 import { pageWide, AnalyticsSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { PRODUK, PASAR } from "@/features/petani/constants";
-import { ChartCard, StatTile, fmt } from "./analytics-ui";
+import { ChartCard, StatTile } from "./analytics-ui";
+import { fmt } from "@/lib/format";
 import { HBarChartX, DonutChartX } from "./charts";
 import { usePasarProduk } from "./queries";
 
 export function PasarPage() {
-  const { data, isPending } = usePasarProduk();
-  if (isPending || !data) return <AnalyticsSkeleton />;
+  const { data, isPending, isError, refetch } = usePasarProduk();
+  if (isPending) return <AnalyticsSkeleton />;
+  if (isError || !data) return <ErrorState message="Gagal memuat data analitik pasar & produk." onRetry={() => void refetch()} />;
 
   const { produk, pasar, totalPetani } = data;
 
@@ -59,8 +62,8 @@ export function PasarPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {produk.map((p, i) => (
-                  <tr key={i}>
+                {produk.map((p) => (
+                  <tr key={`${p.jenis}-${p.label}`}>
                     <td className="py-2 pr-3 text-gray-700">
                       {labelProduk(p)}
                       {p.custom && <span className="ml-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">lainnya</span>}
@@ -86,8 +89,8 @@ export function PasarPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {pasar.map((p, i) => (
-                  <tr key={i}>
+                {pasar.map((p) => (
+                  <tr key={`${p.kategori}-${p.label}`}>
                     <td className="py-2 pr-3 text-gray-700">
                       {labelPasar(p)}
                       {p.custom && <span className="ml-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">lainnya</span>}

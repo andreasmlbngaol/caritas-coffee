@@ -1,12 +1,15 @@
 // Padanan app/(main)/analitik/peta/page.tsx.
 import { pageWide, AnalyticsSkeleton } from "@/components/ui";
-import { ChartCard, StatTile, fmt } from "./analytics-ui";
+import { ErrorState } from "@/components/error-boundary";
+import { ChartCard, StatTile } from "./analytics-ui";
+import { fmt } from "@/lib/format";
 import { MapView } from "./map";
 import { useLokasi } from "./queries";
 
 export function PetaPage() {
-  const { data, isPending } = useLokasi();
-  if (isPending || !data) return <AnalyticsSkeleton />;
+  const { data, isPending, isError, refetch } = useLokasi();
+  if (isPending) return <AnalyticsSkeleton />;
+  if (isError || !data) return <ErrorState message="Gagal memuat data lokasi." onRetry={() => void refetch()} />;
 
   const { desa, plot } = data;
   const totalLuas = desa.reduce((s, d) => s + d.luasArealKopiHa, 0);

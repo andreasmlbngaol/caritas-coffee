@@ -10,6 +10,7 @@ export function NavigationProgress() {
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const visibleRef = useRef(false);
   const navigating = navigation.state !== "idle";
 
   function clearTimers() {
@@ -17,28 +18,37 @@ export function NavigationProgress() {
     timersRef.current = [];
   }
 
+  function show(next: boolean) {
+    visibleRef.current = next;
+    setVisible(next);
+  }
+
   useEffect(() => {
     if (navigating) {
       clearTimers();
-      setVisible(true);
+      // Animasi bar dikendalikan timer (sistem eksternal), bukan turunan
+      // langsung dari render - setState sinkron di sini memang disengaja.
+      // oxlint-disable-next-line react/set-state-in-effect
+      show(true);
+      // oxlint-disable-next-line react/set-state-in-effect
       setProgress(0);
       timersRef.current.push(setTimeout(() => setProgress(35), 60));
       timersRef.current.push(setTimeout(() => setProgress(55), 500));
       timersRef.current.push(setTimeout(() => setProgress(70), 1400));
       timersRef.current.push(setTimeout(() => setProgress(82), 2800));
       timersRef.current.push(setTimeout(() => setProgress(90), 5000));
-    } else if (visible) {
+    } else if (visibleRef.current) {
       clearTimers();
+      // oxlint-disable-next-line react/set-state-in-effect
       setProgress(100);
       timersRef.current.push(
         setTimeout(() => {
-          setVisible(false);
+          show(false);
           setProgress(0);
         }, 400),
       );
     }
     return clearTimers;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigating, location.key]);
 
   return (

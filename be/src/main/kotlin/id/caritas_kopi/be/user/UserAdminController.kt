@@ -78,6 +78,7 @@ class UserAdminController(
         val user = userRepository.findById(id).orElseThrow { ApiException.notFound("User tidak ditemukan") }
         val password = generatePassword()
         user.passwordHash = requireNotNull(passwordEncoder.encode(password))
+        user.tokenVersion += 1 // batalkan sesi lama
         userRepository.save(user)
         return CredentialsResponse(user.username, password)
     }
@@ -89,6 +90,7 @@ class UserAdminController(
         if (id == me.id) throw ApiException.badRequest("Tidak bisa menonaktifkan akun sendiri")
         val user = userRepository.findById(id).orElseThrow { ApiException.notFound("User tidak ditemukan") }
         user.isActive = !user.isActive
+        user.tokenVersion += 1 // batalkan sesi lama (juga saat dinonaktifkan)
         userRepository.save(user)
         return mapOf("isActive" to user.isActive)
     }

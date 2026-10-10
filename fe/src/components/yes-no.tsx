@@ -26,6 +26,7 @@ export function Segmented({
       />
       <div
         data-segmented
+        role="group"
         className="inline-flex shrink-0 rounded-xl bg-gray-100 p-1 ring-1 ring-inset ring-gray-200"
       >
         {options.map((o, i) => {
@@ -34,6 +35,7 @@ export function Segmented({
             <button
               key={o.value}
               type="button"
+              aria-pressed={active}
               onClick={() => onChange(clearable && active ? "" : o.value)}
               className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
                 active

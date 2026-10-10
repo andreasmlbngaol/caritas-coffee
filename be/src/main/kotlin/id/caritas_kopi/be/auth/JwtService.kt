@@ -20,21 +20,24 @@ class JwtService(private val props: AppProperties) {
         Keys.hmacShaKeyFor(raw)
     }
 
-    fun generate(userId: UUID, role: Role): String {
+    fun generate(userId: UUID, role: Role, tokenVersion: Int): String {
         val now = Instant.now()
         return Jwts.builder()
             .subject(userId.toString())
             .claim("role", role.name)
+            .claim("ver", tokenVersion)
             .issuedAt(Date.from(now))
             .expiration(Date.from(now.plusSeconds(props.jwt.ttlSeconds)))
             .signWith(key)
             .compact()
     }
 
-    /** Kembalikan userId bila token valid, else null. */
-    fun parseUserId(token: String): UUID? = try {
+    /** Kembalikan (userId, tokenVersion) bila token valid, else null. */
+    fun parse(token: String): Pair<UUID, Int>? = try {
         val claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).payload
-        UUID.fromString(claims.subject)
+        val id = UUID.fromString(claims.subject)
+        val ver = (claims["ver"] as? Number)?.toInt() ?: 0
+        id to ver
     } catch (_: Exception) {
         null
     }

@@ -10,5 +10,7 @@ class ApiException(val status: HttpStatus, message: String) : RuntimeException(m
         fun forbidden(message: String = "Forbidden") = ApiException(HttpStatus.FORBIDDEN, message)
         fun notFound(message: String = "Data tidak ditemukan") = ApiException(HttpStatus.NOT_FOUND, message)
         fun conflict(message: String) = ApiException(HttpStatus.CONFLICT, message)
+        fun tooManyRequests(message: String = "Terlalu banyak permintaan") =
+            ApiException(HttpStatus.TOO_MANY_REQUESTS, message)
     }
 }

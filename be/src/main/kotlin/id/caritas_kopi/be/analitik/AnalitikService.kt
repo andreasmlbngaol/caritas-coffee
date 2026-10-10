@@ -22,6 +22,10 @@ import java.util.UUID
 /**
  * Agregasi analitik (khusus ADMIN) - padanan `analitik/queries.ts`.
  * Logika grouping teks bebas case-insensitive + pickSpelling + clean dipertahankan persis.
+ *
+ * ponytail: agregasi memuat tabel penuh ke memori (findAll) karena grouping teks
+ * bebas butuh pickSpelling/clean yang tidak bisa diekspresikan di SQL. Aman untuk
+ * skala PKL (ribuan baris); kalau data membesar, pindahkan grouping ke SQL + index.
  */
 @Service
 class AnalitikService(
@@ -213,9 +217,10 @@ class AnalitikService(
     @Transactional(readOnly = true)
     fun getPasarProduk(): PasarProdukDto {
         val totalPetani = petaniRepo.count()
-        val produk = produkRepo.findByDijualTrue()
+        val allProduk = produkRepo.findAll()
+        val produk = allProduk.filter { it.dijual }
         val pasar = pasarRepo.findByAktifTrue()
-        val volumeByJenis = produkRepo.findAll().groupBy { it.jenis.name }
+        val volumeByJenis = allProduk.groupBy { it.jenis.name }
             .map { (jenis, rows) -> VolumeJenis(jenis, rows.sumOf { num(it.volumeKgTahun) }) }
 
         class ProdukAcc {
@@ -223,7 +228,7 @@ class AnalitikService(
             var label = ""
             var jenis = ""
             var volume = 0.0
-            var petani = 0L
+            val petani = HashSet<UUID>()
             var custom = false
         }
         val produkMap = LinkedHashMap<String, ProdukAcc>()
@@ -235,14 +240,14 @@ class AnalitikService(
             val e = produkMap.getOrPut(key) { ProdukAcc().apply { this.label = label; jenis = p.jenis.name; this.custom = custom } }
             e.spell.merge(label, 1, Int::plus)
             e.volume += num(p.volumeKgTahun)
-            e.petani += 1
+            e.petani.add(p.petaniId)
         }
 
         class PasarAcc {
             val spell = LinkedHashMap<String, Int>()
             var label = ""
             var kategori = ""
-            var petani = 0L
+            val petani = HashSet<UUID>()
             var totalPersen = 0.0
             var persenN = 0
             val profil = LinkedHashMap<String, String>()
@@ -258,7 +263,7 @@ class AnalitikService(
                 PasarAcc().apply { this.label = label; kategori = p.kategori.name; this.custom = custom }
             }
             e.spell.merge(label, 1, Int::plus)
-            e.petani += 1
+            e.petani.add(p.petaniId)
             val persen = p.persentase
             if (persen != null) { e.totalPersen += persen; e.persenN += 1 }
             val prof = clean(p.profilPenjual)
@@ -269,13 +274,13 @@ class AnalitikService(
             totalPetani = totalPetani,
             produk = produkMap.values.map { e ->
                 ProdukStat(
-                    label = pickSpelling(e.spell), jenis = e.jenis, volume = e.volume, petani = e.petani,
-                    custom = e.custom, rataVolume = if (e.petani > 0) e.volume / e.petani else 0.0,
+                    label = pickSpelling(e.spell), jenis = e.jenis, volume = e.volume, petani = e.petani.size.toLong(),
+                    custom = e.custom, rataVolume = if (e.petani.isNotEmpty()) e.volume / e.petani.size else 0.0,
                 )
             }.sortedByDescending { it.volume },
             pasar = pasarMap.values.map { e ->
                 PasarStat(
-                    label = pickSpelling(e.spell), kategori = e.kategori, petani = e.petani, custom = e.custom,
+                    label = pickSpelling(e.spell), kategori = e.kategori, petani = e.petani.size.toLong(), custom = e.custom,
                     rataPersen = if (e.persenN > 0) e.totalPersen / e.persenN else 0.0,
                     profil = e.profil.values.toList(),
                 )

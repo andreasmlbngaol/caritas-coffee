@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { pageForm, ListSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { DesaForm } from "./form";
 import { useDesaDetail } from "./queries";
 
@@ -26,9 +27,11 @@ export function DesaBaruPage() {
 
 export function DesaEditPage() {
   const { id = "" } = useParams();
-  const { data, isPending } = useDesaDetail(id);
+  const { data, isPending, isError, refetch } = useDesaDetail(id);
 
-  if (isPending || !data) return <ListSkeleton />;
+  if (isPending) return <ListSkeleton />;
+  if (isError) return <ErrorState message="Gagal memuat data desa." onRetry={() => void refetch()} />;
+  if (!data) return <ErrorState title="Data tidak ditemukan" message="Data desa ini tidak ada atau sudah dihapus." />;
 
   return (
     <main className={pageForm}>

@@ -1,15 +1,18 @@
 // Padanan app/(main)/analitik/konservasi/page.tsx.
 import { pageWide, AnalyticsSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { KONDISI_KEBUN } from "@/features/petani/constants";
-import { ChartCard, StatTile, RankList, fmt } from "./analytics-ui";
+import { ChartCard, StatTile, RankList } from "./analytics-ui";
+import { fmt } from "@/lib/format";
 import { HBarChartX } from "./charts";
 import { useKonservasi } from "./queries";
 
 export function KonservasiPage() {
-  const { data: k, isPending } = useKonservasi();
-  if (isPending || !k) return <AnalyticsSkeleton />;
+  const { data: k, isPending, isError, refetch } = useKonservasi();
+  if (isPending) return <AnalyticsSkeleton />;
+  if (isError || !k) return <ErrorState message="Gagal memuat data analitik konservasi." onRetry={() => void refetch()} />;
 
-  const labelOf = new Map(KONDISI_KEBUN.map((c) => [c.jenis, c.label]));
+  const labelOf = new Map<string, string>(KONDISI_KEBUN.map((c) => [c.jenis, c.label]));
   const short = (s: string) => (s.length > 40 ? s.slice(0, 38).trimEnd() + "…" : s);
 
   const chartData = k.kondisi

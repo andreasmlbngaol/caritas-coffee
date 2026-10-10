@@ -2,7 +2,7 @@
 // Padanan parseAll/plotRows/... di proyek lama (actions.ts). Normalisasi
 // "-" untuk teks kosong & 0 untuk angka kosong dipertahankan persis.
 import type { JawabanGap, JenisPraktikGap } from "@/api/types";
-import { GAP_ITEMS, KONDISI_KEBUN, PRODUK, PASAR, TAHUN_PRODUKSI } from "./constants";
+import { GAP_ITEMS, KONDISI_KEBUN, PRODUK, PASAR, TAHUN_PRODUKSI, STATUS_KEPEMILIKAN, SISTEM_BUDIDAYA } from "./constants";
 import type {
   GapRequest,
   KondisiRequest,
@@ -14,9 +14,12 @@ import type {
   ProdukRequest,
 } from "./types";
 import { get, hasAnyWithPrefix, num } from "@/lib/form";
+import { enumOrNull } from "@/lib/guards";
 
 const JAWABAN_GAP_VALUES = ["YA", "TIDAK", "KADANG"] as const;
 const SATUAN_VALUES = ["KG", "SOLUP", "BAMBU", "KALENG"] as const;
+const STATUS_VALUES = STATUS_KEPEMILIKAN.map((o) => o.value);
+const SISTEM_VALUES = SISTEM_BUDIDAYA.map((o) => o.value);
 
 function getBool(fd: FormData, key: string): boolean {
   return get(fd, key) === "true";
@@ -90,8 +93,8 @@ function plotRows(fd: FormData): PlotRequest[] {
       fotoKey: so(raw.fotoKey),
       fotoLatitude: raw.fotoLatitude !== undefined ? Number(raw.fotoLatitude) : undefined,
       fotoLongitude: raw.fotoLongitude !== undefined ? Number(raw.fotoLongitude) : undefined,
-      statusKepemilikan: raw.statusKepemilikan as PlotRequest["statusKepemilikan"],
-      sistemBudidaya: raw.sistemBudidaya as PlotRequest["sistemBudidaya"],
+      statusKepemilikan: enumOrNull(raw.statusKepemilikan, STATUS_VALUES),
+      sistemBudidaya: enumOrNull(raw.sistemBudidaya, SISTEM_VALUES),
       areaKonservasi: s(raw.areaKonservasi),
       tanamanBaru: num(raw.tanamanBaru ?? null),
       pohonProduktif: num(raw.pohonProduktif ?? null),

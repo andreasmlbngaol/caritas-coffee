@@ -17,7 +17,7 @@ function deriveLevels(desaKode: string): string[] {
 }
 
 /** Lookup cascading 4 level. parent=undefined → provinsi. */
-export function useWilayah(parent: string | undefined, enabled: boolean) {
+function useWilayah(parent: string | undefined, enabled: boolean) {
   return useQuery({
     queryKey: ["wilayah", parent ?? "root"],
     queryFn: () =>

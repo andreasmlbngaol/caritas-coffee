@@ -1,13 +1,16 @@
 // Padanan app/(main)/analitik/wilayah/page.tsx.
 import { pageWide, AnalyticsSkeleton } from "@/components/ui";
-import { ChartCard, StatTile, Meter, fmt } from "./analytics-ui";
+import { ErrorState } from "@/components/error-boundary";
+import { ChartCard, StatTile, Meter } from "./analytics-ui";
+import { fmt } from "@/lib/format";
 import { HBarChartX, DonutChartX, BarChartX } from "./charts";
 import { useWilayah } from "./queries";
 import { KEBIJAKAN, LEMBAGA } from "@/features/desa/constants";
 
 export function WilayahPage() {
-  const { data: w, isPending } = useWilayah();
-  if (isPending || !w) return <AnalyticsSkeleton />;
+  const { data: w, isPending, isError, refetch } = useWilayah();
+  if (isPending) return <AnalyticsSkeleton />;
+  if (isError || !w) return <ErrorState message="Gagal memuat data analitik wilayah." onRetry={() => void refetch()} />;
 
   const lembagaLabel = new Map<string, string>(LEMBAGA.map((l) => [l.jenis, l.label]));
   const kebijakanLabel = new Map<string, string>(KEBIJAKAN.map((k) => [k.jenis, k.label]));

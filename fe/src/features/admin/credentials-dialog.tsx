@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Modal } from "@/components/modal";
 import type { CredentialsResponse } from "@/api/types";
@@ -11,7 +11,12 @@ export function CredentialsDialog({
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const text = `username: ${credentials.username}\npassword: ${credentials.password}`;
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
 
   async function handleCopy() {
     try {
@@ -25,7 +30,8 @@ export function CredentialsDialog({
       document.body.removeChild(ta);
     }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 2000);
   }
 
   return (

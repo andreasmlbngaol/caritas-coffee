@@ -8,8 +8,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # Bind ke localhost (BIND_HOST) - DB tidak boleh terbuka ke internet.
+    # Di prod nginx host mem-proxy ke FE; DB/BE cukup diakses dari jaringan compose.
     ports:
-      - "${POSTGRES_PORT:-5544}:5432"
+      - "${BIND_HOST:-127.0.0.1}:${POSTGRES_PORT:-5544}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -34,10 +36,12 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       STORAGE_PATH: ${STORAGE_PATH:-/app/data/uploads}
       APP_URL: ${APP_URL}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes:
       - uploads:${STORAGE_PATH:-/app/data/uploads}
+    # BE hanya diakses nginx host (lewat jaringan compose) atau localhost.
     ports:
-      - "${BE_PORT:-8089}:8080"
+      - "${BIND_HOST:-127.0.0.1}:${BE_PORT:-8089}:8080"
     networks: [kopi]
 
   fe:
@@ -45,8 +49,9 @@ services:
       context: ./fe
     restart: unless-stopped
     depends_on: [be]
+    # nginx host mem-proxy ke sini; bind localhost agar tidak terbuka langsung.
     ports:
-      - "${FE_PORT:-8088}:80"
+      - "${BIND_HOST:-127.0.0.1}:${FE_PORT:-8088}:80"
     networks: [kopi]
 
 volumes:

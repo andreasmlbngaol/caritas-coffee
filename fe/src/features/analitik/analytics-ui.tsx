@@ -1,9 +1,6 @@
 // Padanan app/(main)/analitik/_components/analytics-ui.tsx.
-// `fmt` sudah ada di lib/format.ts - re-export agar impor halaman tetap sama.
 import type { ReactNode } from "react";
 import { idNum } from "@/lib/format";
-
-export { fmt } from "@/lib/format";
 
 // Kartu analitik standar.
 export function ChartCard({

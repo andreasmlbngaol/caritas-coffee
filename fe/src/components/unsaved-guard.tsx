@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Modal } from "./modal";
 
 /**
  * Lindungi form dari kehilangan data:
@@ -82,35 +83,24 @@ export function UnsavedGuard() {
   if (!confirmOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-4"
-      onClick={stay}
-    >
-      <div
-        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-sm font-semibold tracking-tight">Tinggalkan halaman ini?</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Perubahan yang belum disimpan akan hilang.
-        </p>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={stay}
-            className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
-          >
-            Tetap di Sini
-          </button>
-          <button
-            type="button"
-            onClick={leave}
-            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
-          >
-            Tinggalkan
-          </button>
-        </div>
+    <Modal open onClose={stay} title="Tinggalkan halaman ini?" closeOnBackdrop={false}>
+      <p className="mt-2 text-sm text-gray-600">Perubahan yang belum disimpan akan hilang.</p>
+      <div className="mt-5 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={stay}
+          className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
+        >
+          Tetap di Sini
+        </button>
+        <button
+          type="button"
+          onClick={leave}
+          className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+        >
+          Tinggalkan
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }

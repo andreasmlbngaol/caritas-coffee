@@ -289,16 +289,42 @@ object Docx {
     }
 
     fun write(doc: XWPFDocument): ByteArray {
-        doc.tables.forEach { buildGrid(it, contentWidth(doc)) }
+        // Lebar grid tiap tabel harus mengikuti lebar section-nya. Section B landscape
+        // (lebih lebar) - kalau semua tabel memakai lebar section terakhir (portrait),
+        // kolom section B salah di LibreOffice yang lebih mematuhi gridCol.
+        val widths = sectionContentWidths(doc)
+        var sectionIdx = 0
+        doc.bodyElements.forEach { el ->
+            when (el) {
+                is XWPFTable -> buildGrid(el, widths.getOrElse(sectionIdx) { widths.last() })
+                is XWPFParagraph -> if (el.ctp.pPr?.isSetSectPr == true) sectionIdx++
+            }
+        }
         val out = java.io.ByteArrayOutputStream()
         doc.write(out)
         doc.close()
         return out.toByteArray()
     }
 
-    /** Lebar area konten body terakhir (pgSz.w - margin kiri - kanan), dalam twips. */
-    private fun contentWidth(doc: XWPFDocument): Long {
-        val sectPr = doc.document.body.sectPr ?: return 10466L
+    /**
+     * Lebar konten (twips) tiap section, urut dokumen. Section non-terakhir menyimpan
+     * sectPr di paragraf; section terakhir di body.sectPr.
+     */
+    private fun sectionContentWidths(doc: XWPFDocument): List<Long> {
+        val widths = ArrayList<Long>()
+        doc.bodyElements.forEach { el ->
+            if (el is XWPFParagraph) {
+                val sp = el.ctp.pPr?.sectPr
+                if (sp != null) widths.add(contentWidth(sp))
+            }
+        }
+        widths.add(contentWidth(doc.document.body.sectPr))
+        return widths
+    }
+
+    /** Lebar area konten section (pgSz.w - margin kiri - kanan), dalam twips. */
+    private fun contentWidth(sectPr: org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSectPr?): Long {
+        if (sectPr == null) return 10466L
         val w = numOrZero(sectPr.pgSz?.w).takeIf { it > 0 } ?: 11906L
         val mar = sectPr.pgMar
         val left = numOrZero(mar?.left).takeIf { it > 0 } ?: 720L

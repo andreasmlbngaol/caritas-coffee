@@ -18,6 +18,7 @@ import type { PetaniDetailDto } from "@/api/types";
 
 const blankStr = (v: string | null | undefined) => (v == null || v === "-" ? "" : v);
 const toDateInput = (d: string | null | undefined) => (d ? d.slice(0, 10) : "");
+const CURRENT_YEAR = new Date().getFullYear();
 
 export function PetaniForm({ id, defaults }: { id?: string; defaults?: PetaniDetailDto }) {
   const navigate = useNavigate();
@@ -88,7 +89,7 @@ export function PetaniForm({ id, defaults }: { id?: string; defaults?: PetaniDet
                 label="Tanggal Lahir"
                 name="tanggalLahir"
                 defaultValue={toDateInput(defaults?.tanggalLahir)}
-                yearRange={[1940, new Date().getFullYear()]}
+                yearRange={[1940, CURRENT_YEAR]}
               />
               <Field label="Nomor Telepon / HP" name="telepon" defaultValue={blankStr(defaults?.telepon)} />
               <DatePicker

@@ -104,7 +104,8 @@ class PetaniService(
     @Transactional
     fun create(req: PetaniRequest, me: AuthPrincipal): UUID {
         validate(req)
-        if (req.kodePetani != null && petaniRepo.findByKodePetani(req.kodePetani).isPresent) {
+        val kode = normKodePetani(req.kodePetani)
+        if (kode != null && petaniRepo.findByKodePetani(kode).isPresent) {
             throw ApiException.conflict("Kode petani sudah dipakai")
         }
         val kelompokId = resolveKelompok(req, req.desaKode)
@@ -122,7 +123,7 @@ class PetaniService(
             kontakDaruratTelepon = req.kontakDaruratTelepon,
             kontakDaruratHubungan = req.kontakDaruratHubungan,
             desaKode = req.desaKode,
-            kodePetani = req.kodePetani,
+            kodePetani = kode,
             kelompokTaniId = kelompokId,
             createdById = me.id,
         )
@@ -137,8 +138,9 @@ class PetaniService(
         requireOwned(p, me)
         validate(req)
 
-        if (req.kodePetani != null && req.kodePetani != p.kodePetani &&
-            petaniRepo.findByKodePetani(req.kodePetani).isPresent
+        val kode = normKodePetani(req.kodePetani)
+        if (kode != null && kode != p.kodePetani &&
+            petaniRepo.findByKodePetani(kode).isPresent
         ) {
             throw ApiException.conflict("Kode petani sudah dipakai")
         }
@@ -156,10 +158,10 @@ class PetaniService(
         p.kontakDaruratTelepon = req.kontakDaruratTelepon
         p.kontakDaruratHubungan = req.kontakDaruratHubungan
         p.desaKode = req.desaKode
-        p.kodePetani = req.kodePetani
+        p.kodePetani = kode
         p.kelompokTaniId = kelompokId
         p.updatedAt = Instant.now()
-        petaniRepo.save(p)
+        petaniRepo.saveAndFlush(p)
 
         plotRepo.deleteByPetaniId(id)
         naunganRepo.deleteByPetaniId(id)
@@ -185,6 +187,10 @@ class PetaniService(
         if (req.desaKode.isBlank()) throw ApiException.badRequest("Desa wajib dipilih")
     }
 
+    /** Normalisasi kode petani (trim + UPPERCASE) agar cek unik konsisten dgn data lama. */
+    private fun normKodePetani(kode: String?): String? =
+        kode?.trim()?.takeIf { it.isNotEmpty() }?.uppercase()
+
     private fun requireOwned(p: Petani, me: AuthPrincipal) {
         // Non-owner: sembunyikan keberadaan data (404), sama seperti notFound() di halaman detail Next lama.
         if (!me.isAdmin && p.createdById != me.id) throw ApiException.notFound("Data tidak ditemukan")
@@ -192,7 +198,10 @@ class PetaniService(
 
     private fun resolveKelompok(req: PetaniRequest, desaKode: String): UUID? {
         req.kelompokTaniId?.let { idStr ->
-            val kt = kelompokRepo.findById(UUID.fromString(idStr))
+            val id = runCatching { UUID.fromString(idStr) }.getOrElse {
+                throw ApiException.badRequest("Kelompok tani tidak valid")
+            }
+            val kt = kelompokRepo.findById(id)
                 .orElseThrow { ApiException.badRequest("Kelompok tani tidak valid") }
             if (kt.desaKode != desaKode) throw ApiException.badRequest("Kelompok tani tidak valid")
             return kt.id

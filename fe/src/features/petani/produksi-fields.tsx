@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { inputCls } from "@/components/ui";
 import { SATUAN_PRODUKSI, TAHUN_ESTIMASI, TAHUN_PRODUKSI } from "./constants";
-import type { ProduksiDto } from "@/api/types";
+import type { ProduksiPetaniDto } from "@/api/types";
 
 const blankNum = (v: number | null | undefined) => (v == null || v === 0 ? "" : v);
 const idNum = new Intl.NumberFormat("id-ID");
 
-function YearCard({ tahun, d }: { tahun: number; d?: ProduksiDto }) {
+function YearCard({ tahun, d }: { tahun: number; d?: ProduksiPetaniDto }) {
   const [vals, setVals] = useState({
     cherry: d?.cherry ?? 0,
     gabahBasah: d?.gabahBasah ?? 0,
@@ -90,7 +90,7 @@ function YearCard({ tahun, d }: { tahun: number; d?: ProduksiDto }) {
   );
 }
 
-export function ProduksiFields({ defaults }: { defaults?: ProduksiDto[] }) {
+export function ProduksiFields({ defaults }: { defaults?: ProduksiPetaniDto[] }) {
   const find = (tahun: number) => defaults?.find((x) => x.tahun === tahun);
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

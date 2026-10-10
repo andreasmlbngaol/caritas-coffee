@@ -23,9 +23,9 @@ class JwtAuthFilter(
     ) {
         val token = request.cookies?.firstOrNull { it.name == props.jwt.cookieName }?.value
         if (token != null && SecurityContextHolder.getContext().authentication == null) {
-            jwtService.parseUserId(token)?.let { userId ->
+            jwtService.parse(token)?.let { (userId, tokenVersion) ->
                 val user = userRepository.findById(userId).orElse(null)
-                if (user != null && user.isActive) {
+                if (user != null && user.isActive && user.tokenVersion == tokenVersion) {
                     val principal = AuthPrincipal(
                         id = user.id!!,
                         username = user.username,

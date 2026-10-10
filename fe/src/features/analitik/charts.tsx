@@ -13,9 +13,10 @@ import {
   PieChart,
   Pie,
   Legend,
+  type DataKey,
 } from "recharts";
 import { ACCENT, SERIES, chartTheme } from "./palette";
-import { useIsDark } from "@/components/theme-toggle";
+import { useIsDark } from "@/components/use-is-dark";
 import { idNum } from "@/lib/format";
 
 const fmtNum = (v: unknown) => (typeof v === "number" ? idNum.format(v) : String(v ?? ""));
@@ -40,7 +41,7 @@ function tooltipStyle(dark: boolean) {
 const tooltipItemStyle = (dark: boolean) => ({ color: chartTheme(dark).INK });
 
 // ---------- Kolom vertikal (magnitudo, satu seri) ----------
-export function BarChartX({
+export function BarChartX<T extends object>({
   data,
   xKey,
   yKey,
@@ -49,9 +50,9 @@ export function BarChartX({
   color = ACCENT,
   valueLabel = "Nilai",
 }: {
-  data: object[];
-  xKey: string;
-  yKey: string;
+  data: readonly T[];
+  xKey: DataKey<T>;
+  yKey: DataKey<T>;
   height?: number;
   unit?: string;
   color?: string;
@@ -78,7 +79,7 @@ export function BarChartX({
 }
 
 // ---------- Bar horizontal (label panjang / peringkat) ----------
-export function HBarChartX({
+export function HBarChartX<T extends object>({
   data,
   yKey,
   xKey,
@@ -87,9 +88,9 @@ export function HBarChartX({
   color = ACCENT,
   valueLabel = "Nilai",
 }: {
-  data: object[];
-  yKey: string;
-  xKey: string;
+  data: readonly T[];
+  yKey: DataKey<T>;
+  xKey: DataKey<T>;
   height?: number;
   unit?: string;
   color?: string;
@@ -116,16 +117,16 @@ export function HBarChartX({
 }
 
 // ---------- Bar bertingkat (part-to-whole per kategori) ----------
-export function StackedBarChartX({
+export function StackedBarChartX<T extends object>({
   data,
   xKey,
   keys,
   height = 300,
   unit = "",
 }: {
-  data: object[];
-  xKey: string;
-  keys: { key: string; label: string; color?: string }[];
+  data: readonly T[];
+  xKey: DataKey<T>;
+  keys: { key: Extract<keyof T, string>; label: string; color?: string }[];
   height?: number;
   unit?: string;
 }) {
@@ -193,12 +194,12 @@ function PropTip({
   );
 }
 
-export function ProportionBarX({
+export function ProportionBarX<T extends object>({
   data,
   height,
   heightPerRow = 40,
 }: {
-  data: object[];
+  data: readonly T[];
   height?: number;
   heightPerRow?: number;
 }) {
@@ -228,7 +229,7 @@ export function ProportionBarX({
 }
 
 // ---------- Garis (tren waktu) ----------
-export function LineChartX({
+export function LineChartX<T extends object>({
   data,
   xKey,
   lines,
@@ -236,9 +237,9 @@ export function LineChartX({
   unit = "",
   scale = "linear",
 }: {
-  data: object[];
-  xKey: string;
-  lines: { key: string; label: string; color?: string }[];
+  data: readonly T[];
+  xKey: DataKey<T>;
+  lines: { key: Extract<keyof T, string>; label: string; color?: string }[];
   height?: number;
   unit?: string;
   // "sqrt" agar seri bernilai jauh lebih kecil tetap terlihat (mis. green bean
@@ -284,16 +285,16 @@ export function LineChartX({
 }
 
 // ---------- Donut (part-to-whole kategori) ----------
-export function DonutChartX({
+export function DonutChartX<T extends object>({
   data,
   nameKey,
   valueKey,
   height = 300,
   unit = "",
 }: {
-  data: object[];
-  nameKey: string;
-  valueKey: string;
+  data: readonly T[];
+  nameKey: DataKey<T>;
+  valueKey: DataKey<T>;
   height?: number;
   unit?: string;
 }) {

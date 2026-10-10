@@ -41,4 +41,8 @@ class User(
 
     @Column(name = "last_login_at")
     var lastLoginAt: Instant? = null,
+
+    /** Dinaikkan saat reset password / (de)aktivasi -> membatalkan token lama. */
+    @Column(name = "token_version", nullable = false)
+    var tokenVersion: Int = 0,
 )

@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Plus, FileText, FileDown, Pencil, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { pageWide, ListSkeleton } from "@/components/ui";
-import { SortHeader, parseSort, compareRows } from "@/components/sort";
+import { ErrorState } from "@/components/error-boundary";
+import { SortHeader } from "@/components/sort";
+import { parseSort, compareRows } from "@/components/sort-utils";
 import { useAuth } from "@/features/auth/use-auth";
 import { PetaniDeleteButton } from "./delete-button";
 import { usePetaniList } from "./queries";
@@ -13,7 +15,7 @@ const PER_PAGE = 10;
 const SORT_COLUMNS = ["namaLengkap", "kodePetani", "desa", "kelompokTani", "createdBy"] as const;
 type SortColumn = (typeof SORT_COLUMNS)[number];
 
-function rowValue(row: PetaniListDto, column: string): string | number | null {
+function rowValue(row: PetaniListDto, column: SortColumn): string | number | null {
   switch (column) {
     case "namaLengkap":
       return row.namaLengkap;
@@ -39,7 +41,7 @@ export function PetaniListPage() {
   const pageNum = Math.max(1, Number(params.get("page")) || 1);
   const { sort, dir } = parseSort<SortColumn>(params, SORT_COLUMNS, "namaLengkap");
 
-  const { data, isPending } = usePetaniList();
+  const { data, isPending, isError, refetch } = usePetaniList();
 
   const filtered = useMemo(() => {
     const rows = data ?? [];
@@ -74,6 +76,7 @@ export function PetaniListPage() {
   }
 
   if (isPending) return <ListSkeleton />;
+  if (isError) return <ErrorState message="Gagal memuat data petani." onRetry={() => void refetch()} />;
 
   return (
     <main className={pageWide}>
@@ -105,6 +108,7 @@ export function PetaniListPage() {
           <input
             name="q"
             defaultValue={q}
+            aria-label="Cari petani"
             placeholder="Cari nama / kode petani / kode kelompok…"
             className="w-full rounded-xl bg-white py-2.5 pl-10 pr-3 text-sm ring-1 ring-inset ring-gray-300 outline-none transition placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-jade-700"
           />

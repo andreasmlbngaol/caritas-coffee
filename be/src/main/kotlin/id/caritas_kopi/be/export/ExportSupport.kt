@@ -18,7 +18,9 @@ import java.util.Locale
 object ExportSupport {
 
     private val ID = Locale("id", "ID")
-    private val idNum: NumberFormat = NumberFormat.getNumberInstance(ID)
+    // NumberFormat TIDAK thread-safe. Export berjalan paralel (banyak request), jadi
+    // buat per-panggilan - kalau dipakai bersama, hasil format bisa korup / exception.
+    private fun newNum(): NumberFormat = NumberFormat.getNumberInstance(ID)
     private val dateFmt: DateTimeFormatter =
         DateTimeFormatter.ofPattern("d MMMM yyyy", ID)
 
@@ -145,16 +147,16 @@ object ExportSupport {
     // ---------- Pemformatan ----------
     fun fmt(v: String?): String = if (v.isNullOrEmpty()) "-" else v
 
-    fun num(v: Number?): String = if (v == null) "-" else idNum.format(v)
+    fun num(v: Number?): String = if (v == null) "-" else newNum().format(v)
 
-    fun numUnit(v: Number?, unit: String): String = if (v == null) "-" else "${idNum.format(v)} $unit"
+    fun numUnit(v: Number?, unit: String): String = if (v == null) "-" else "${newNum().format(v)} $unit"
 
     fun bool(v: Boolean?): String = if (v == null) "-" else if (v) "Ya" else "Tidak"
 
     fun fmtBool(v: Boolean?): String = bool(v)
 
     fun fmtTutupan(v: Number?, satuan: String?): String =
-        if (v == null) "-" else "${idNum.format(v)} ${if (satuan == "HA") "Ha" else "%"}"
+        if (v == null) "-" else "${newNum().format(v)} ${if (satuan == "HA") "Ha" else "%"}"
 
     fun fmtBoolDetail(v: Boolean?, detail: String?, label: String): String = when {
         v == null -> "-"

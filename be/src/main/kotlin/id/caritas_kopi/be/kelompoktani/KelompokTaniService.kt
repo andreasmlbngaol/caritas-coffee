@@ -19,6 +19,9 @@ data class KelompokTaniDto(
     val createdAt: Instant,
 )
 
+/** Ringkas untuk combobox (by desa) - kontrak OpenAPI konkret (bukan Map/Any). */
+data class KelompokTaniRingkasDto(val id: String, val nama: String, val kode: String?)
+
 data class KelompokTaniRequest(val nama: String, val kode: String? = null, val desaKode: String)
 
 @Service
@@ -33,6 +36,8 @@ class KelompokTaniService(
         val rows = repo.findAllByOrderByNamaAsc()
         val desaMap = wilayah.desaMap(rows.map { it.desaKode })
         val kecMap = wilayah.kecamatanMap(desaMap.values.map { it.kecamatanKode })
+        val jumlahPerKelompok = repo.countPetaniPerKelompok()
+            .associate { (it[0] as UUID) to (it[1] as Long) }
         return rows.map { kt ->
             val desa = desaMap[kt.desaKode]
             KelompokTaniDto(
@@ -42,7 +47,7 @@ class KelompokTaniService(
                 desa = desa?.nama ?: "-",
                 desaKode = kt.desaKode,
                 kecamatan = desa?.let { kecMap[it.kecamatanKode]?.nama },
-                jumlahPetani = petaniRepo.countByKelompokTaniId(kt.id!!),
+                jumlahPetani = jumlahPerKelompok[kt.id] ?: 0L,
                 createdAt = kt.createdAt,
             )
         }
@@ -50,9 +55,9 @@ class KelompokTaniService(
 
     /** Daftar ringkas untuk combobox (by desa). */
     @Transactional(readOnly = true)
-    fun byDesa(desaKode: String): List<Map<String, String?>> =
+    fun byDesa(desaKode: String): List<KelompokTaniRingkasDto> =
         repo.findByDesaKodeOrderByNamaAsc(desaKode).map {
-            mapOf("id" to it.id.toString(), "nama" to it.nama, "kode" to it.kode)
+            KelompokTaniRingkasDto(id = it.id.toString(), nama = it.nama, kode = it.kode)
         }
 
     @Transactional

@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ComponentType } from "react";
 import { Link } from "react-router";
 import {
   Plus,
@@ -14,12 +15,27 @@ import {
 } from "lucide-react";
 import { pageWide } from "@/components/ui";
 import { useAuth } from "@/features/auth/use-auth";
-import { StatTile, fmt } from "@/features/analitik/analytics-ui";
-import { LineChartX } from "@/features/analitik/charts";
+import { StatTile } from "@/features/analitik/analytics-ui";
+import { fmt } from "@/lib/format";
 import { useRingkasan } from "@/features/analitik/queries";
 import { usePetaniList } from "@/features/petani/queries";
 import { useDesaList } from "@/features/desa/queries";
 import { idNum } from "@/lib/format";
+import type { TrenProduksi } from "@/api/types";
+
+// Recharts berat (~410 kB) - hanya dimuat admin saat kartu tren benar-benar
+// dirender, agar enumerator tidak ikut mengunduhnya. Cast lewat `unknown`:
+// LineChartX generik, dan inferensi tipe generik hilang saat dibungkus lazy.
+const LineChartX = lazy(() =>
+  import("@/features/analitik/charts").then((m) => ({ default: m.LineChartX })),
+) as unknown as ComponentType<{
+  data: readonly TrenProduksi[];
+  xKey: keyof TrenProduksi;
+  lines: { key: keyof TrenProduksi; label: string }[];
+  unit?: string;
+  scale?: "linear" | "sqrt";
+  height?: number;
+}>;
 
 const KATEGORI = [
   { href: "/analitik/gap", label: "GAP", desc: "Adopsi 21 praktik budidaya", icon: Sprout },
@@ -196,19 +212,21 @@ function AdminDashboard({ name }: { name: string }) {
             Total volume (kg) per tahun, skala akar agar volume kecil tetap terlihat
           </p>
         </div>
-        <LineChartX
-          data={r?.trenProduksi ?? []}
-          xKey="tahun"
-          lines={[
-            { key: "cherry", label: "Cherry" },
-            { key: "gabahBasah", label: "Gabah basah" },
-            { key: "gabahKering", label: "Gabah kering" },
-            { key: "greenBean", label: "Green bean" },
-          ]}
-          unit="kg"
-          scale="sqrt"
-          height={260}
-        />
+        <Suspense fallback={<div className="h-[260px] animate-pulse rounded-xl bg-gray-200/70" />}>
+          <LineChartX
+            data={r?.trenProduksi ?? []}
+            xKey="tahun"
+            lines={[
+              { key: "cherry", label: "Cherry" },
+              { key: "gabahBasah", label: "Gabah basah" },
+              { key: "gabahKering", label: "Gabah kering" },
+              { key: "greenBean", label: "Green bean" },
+            ]}
+            unit="kg"
+            scale="sqrt"
+            height={260}
+          />
+        </Suspense>
       </div>
     </main>
   );

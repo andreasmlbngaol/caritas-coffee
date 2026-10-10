@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router";
 import {
   LayoutDashboard,
@@ -69,21 +69,49 @@ export function NavRail({ user }: { user: SessionUser }) {
     () => document.cookie.includes("nav-expanded=1"),
   );
   const [mobileOpen, setMobileOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
+  const restoreRef = useRef<HTMLElement | null>(null);
   const pathname = useLocation().pathname;
 
   const isAdmin = user.role === "ADMIN";
   const visibleMenus = menus.filter((m) => !m.adminOnly || isAdmin);
 
-  // Kunci scroll + tutup dengan Escape saat drawer mobile terbuka.
+  // Drawer mobile: kunci scroll, tutup dengan Escape, focus trap, kembalikan fokus.
   useEffect(() => {
     if (!mobileOpen) return;
+    restoreRef.current = document.activeElement as HTMLElement | null;
+    const panel = drawerRef.current;
+    const FOCUSABLE =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    panel?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileOpen(false);
+        return;
+      }
+      if (e.key !== "Tab" || !panel) return;
+      const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (el) => el.offsetParent !== null,
+      );
+      if (items.length === 0) return;
+      const firstEl = items[0]!;
+      const lastEl = items[items.length - 1]!;
+      if (e.shiftKey && document.activeElement === firstEl) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && document.activeElement === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", onKey);
+      restoreRef.current?.focus?.();
     };
   }, [mobileOpen]);
 
@@ -216,7 +244,12 @@ export function NavRail({ user }: { user: SessionUser }) {
           onClick={() => setMobileOpen(false)}
         >
           <aside
-            className="flex h-full w-72 max-w-[80vw] flex-col bg-white"
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu navigasi"
+            tabIndex={-1}
+            className="flex h-full w-72 max-w-[80vw] flex-col bg-white outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex h-16 items-center justify-between px-4">

@@ -1,6 +1,7 @@
 package id.caritas_kopi.be.kelompoktani
 
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -18,9 +19,13 @@ import java.util.UUID
 class KelompokTaniController(private val service: KelompokTaniService) {
 
     @GetMapping
-    fun list(@RequestParam(required = false) desa: String?): Any {
+    fun list(@RequestParam(required = false) desa: String?): ResponseEntity<Any> {
         // Dengan ?desa= -> daftar ringkas untuk combobox; tanpa -> daftar lengkap.
-        return if (desa != null) service.byDesa(desa) else service.list()
+        return if (desa != null) {
+            ResponseEntity.ok(service.byDesa(desa))
+        } else {
+            ResponseEntity.ok(service.list())
+        }
     }
 
     @PostMapping

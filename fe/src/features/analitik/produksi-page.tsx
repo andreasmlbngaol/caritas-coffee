@@ -1,12 +1,15 @@
 // Padanan app/(main)/analitik/produksi/page.tsx.
 import { pageWide, AnalyticsSkeleton } from "@/components/ui";
-import { ChartCard, StatTile, fmt } from "./analytics-ui";
+import { ErrorState } from "@/components/error-boundary";
+import { ChartCard, StatTile } from "./analytics-ui";
+import { fmt } from "@/lib/format";
 import { LineChartX, BarChartX, StackedBarChartX } from "./charts";
 import { useProduksi } from "./queries";
 
 export function ProduksiPage() {
-  const { data, isPending } = useProduksi();
-  if (isPending || !data) return <AnalyticsSkeleton />;
+  const { data, isPending, isError, refetch } = useProduksi();
+  if (isPending) return <AnalyticsSkeleton />;
+  if (isError || !data) return <ErrorState message="Gagal memuat data analitik produksi." onRetry={() => void refetch()} />;
 
   const { byTahun, topDesa, tahunTerbaru } = data;
   const terbaru = byTahun.at(-1);

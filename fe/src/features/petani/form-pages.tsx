@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { pageForm, ListSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { PetaniForm } from "./form";
 import { usePetaniDetail } from "./queries";
 
@@ -26,9 +27,11 @@ export function PetaniBaruPage() {
 
 export function PetaniEditPage() {
   const { id = "" } = useParams();
-  const { data, isPending } = usePetaniDetail(id);
+  const { data, isPending, isError, refetch } = usePetaniDetail(id);
 
-  if (isPending || !data) return <ListSkeleton />;
+  if (isPending) return <ListSkeleton />;
+  if (isError) return <ErrorState message="Gagal memuat data petani." onRetry={() => void refetch()} />;
+  if (!data) return <ErrorState title="Data tidak ditemukan" message="Data petani ini tidak ada atau sudah dihapus." />;
 
   return (
     <main className={pageForm}>

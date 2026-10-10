@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { ArrowLeft, Check, FileDown, FileText, Pencil } from "lucide-react";
 import { pageWide, ListSkeleton } from "@/components/ui";
+import { ErrorState } from "@/components/error-boundary";
 import { useAuth } from "@/features/auth/use-auth";
 import { idNum } from "@/lib/format";
 import { DesaDeleteButton } from "./delete-button";
@@ -21,7 +23,7 @@ const fmtTutupan = (v: number | null | undefined, s: string | null | undefined) 
 const fmtBoolDetail = (v: boolean | null | undefined, detail: string | null | undefined, label: string) =>
   v == null ? "-" : v ? (detail ? `Ya, ${label}: ${detail}` : "Ya") : "Tidak";
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
       <h2 className="mb-4 text-sm font-semibold tracking-tight">{title}</h2>
@@ -59,9 +61,11 @@ export function DesaDetailPage() {
   const { id = "" } = useParams();
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
-  const { data: b, isPending } = useDesaDetail(id);
+  const { data: b, isPending, isError, refetch } = useDesaDetail(id);
 
-  if (isPending || !b) return <ListSkeleton />;
+  if (isPending) return <ListSkeleton />;
+  if (isError) return <ErrorState message="Gagal memuat data desa." onRetry={() => void refetch()} />;
+  if (!b) return <ErrorState title="Data tidak ditemukan" message="Data desa ini tidak ada atau sudah dihapus." />;
 
   const w = b.desa;
   const koordinat = b.latitude != null && b.longitude != null ? `${b.latitude}, ${b.longitude}` : "-";
@@ -153,8 +157,8 @@ export function DesaDetailPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <tbody className="divide-y divide-gray-100">
-                {sectionA.map((p, i) => (
-                  <tr key={i}>
+                {sectionA.map((p) => (
+                  <tr key={p.left[0]}>
                     <td className={`${labelCls} w-[21%]`}>{p.left[0]}</td>
                     <td className={`${valueCls} w-[29%]`}>{p.left[1]}</td>
                     <td className={`${labelCls} w-[21%]`}>{p.right[0]}</td>
