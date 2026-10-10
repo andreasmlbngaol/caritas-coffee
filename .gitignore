@@ -11,6 +11,12 @@ Thumbs.db
 *.iml
 .vscode/
 
+# ===== AI tooling (Claude Code / agent skills - lokal, bukan bagian aplikasi) =====
+.agents/
+.claude/
+skills-lock.json
+be/skills-lock.json
+
 # ===== Node / FE =====
 node_modules/
 dist/
